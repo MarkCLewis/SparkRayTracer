@@ -5,17 +5,20 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import swiftvis2.raytrace._
 import java.awt.image.BufferedImage
+import javax.swing._
+import java.awt.Graphics
 
 object Renderer1 {
 	def main(args: Array[String]) = {
-		val conf = new SparkConf().setAppName("Temp Data").setMaster("local[*]")
+		val conf = new SparkConf().setAppName("Renderer1").setMaster("local[*]")
 		val sc = new SparkContext(conf)
   
 		sc.setLogLevel("WARN")
 
-		val geom = new GeomSphere(Point(1.0, 1.0, 0.0), 1.0, p => RTColor.Red, p => 0.0)
-		val light = List(new AmbientLight(RTColor.White))
-		val bimg = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB)
+		val size = 1000
+		val geom = new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
+		val light = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
+		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
 		val img = new RTImage {
 			def width = bimg.getWidth()
 			def height = bimg.getHeight()
@@ -23,25 +26,37 @@ object Renderer1 {
 				bimg.setRGB(x, y, color.toARGB)
 			}
 		}
+		val numRays = 2
 
-		val rays = makeRays(sc, Point(0.0, 0.0, 0.0), Point(-2.0, 0.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0), img, 10)
+		val rays = makeRays(sc, Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0), img, numRays)
+		val colors = transform(rays, geom, light)
+		combineAndSetColors(colors, img, numRays)
+
+		val frame = new JFrame {
+			override def paint(g: Graphics): Unit = {
+				g.drawImage(bimg, 0, 0, null)
+			}
+		} 
+		frame.setSize(size, size)
+		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
+		frame.setVisible(true)
 	
 		sc.stop()
 	}
 
 
-		def makeRays(sc: SparkContext, eye: Point, topLeft: Point, right: Vect, down: Vect, img: RTImage, numRays: Int): RDD[((Int, Int), Ray)] = {
-			//make rays in a scala collection
-			val aspect = img.width.toDouble/img.height
-			val rays = for (i <- 0 until img.width; j <- 0 until img.height; index <- 0 until numRays) yield {
-        	((i, j), Ray(eye, topLeft + right * (aspect * (i + (if (index > 0) math.random * 0.75 else 0)) / img.width) 
-										+ down * (j + (if (index > 0) math.random * 0.75 else 0)) / img.height))
-    	}
-//			sc.parallelize(rays)
-		???
+	def makeRays(sc: SparkContext, eye: Point, topLeft: Point, right: Vect, down: Vect, img: RTImage, numRays: Int): 
+		RDD[((Int, Int), Ray)] = {
+		//make rays in a scala collection
+		val aspect = img.width.toDouble/img.height
+		val rays = for (i <- 0 until img.width; j <- 0 until img.height; index <- 0 until numRays) yield {
+			((i, j), Ray(eye, topLeft + right * (aspect * (i + (if (index > 0) math.random * 0.75 else 0)) / img.width) 
+				+ down * (j + (if (index > 0) math.random * 0.75 else 0)) / img.height))
 		}
+		sc.parallelize(rays)
+	}
 
-		def transform(rays: RDD[((Int, Int), Ray)], geom: Geometry, lights: List[Light]):  RDD[((Int, Int), RTColor)] = {
+	def transform(rays: RDD[((Int, Int), Ray)], geom: Geometry, lights: List[Light]):  RDD[((Int, Int), RTColor)] = {
 		rays.mapValues(ray => RayTrace.castRay(ray, geom, lights, 0))
 	}
 	
