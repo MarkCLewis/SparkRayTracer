@@ -27,7 +27,7 @@ object Renderer1 {
 			}
 		}
 		val numRays = 2
-
+		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
 		val rays = makeRays(sc, Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0), img, numRays)
 		val colors = transform(rays, geom, light)
 		combineAndSetColors(colors, img, numRays)
@@ -44,6 +44,23 @@ object Renderer1 {
 		sc.stop()
 	}
 
+	/*
+		randomGeometryArr takes the random generator, then max and min values for x, y, and z, as well as a max radius, and
+		the number of geomSpheres you want. It returns some an array of N randomGeomSpheres
+	*/
+	def randomGeometryArr(rand:util.Random, maxX:Int, minX:Int, maxY:Int, minY:Int, maxZ:Int, minZ:Int, maxRadius:Int, n:Int):Array[Geometry] = {
+		def randGeometry():Geometry = {
+			
+			val x = rand.nextInt(maxX - minX) + minX
+			val y = rand.nextInt(maxY - minY) + minY
+			val z = rand.nextInt(maxZ - minZ) + minZ
+			val rad = rand.nextInt(maxRadius)
+			val center = new Point(x, y, z)
+			new GeomSphere(center, rad, p => RTColor(0xFFFFFF00), p => 0.0)
+		}
+		var randGeoms:Array[Geometry] = Array.fill(n)(randGeometry)
+		randGeoms	
+	}
 
 	def makeRays(sc: SparkContext, eye: Point, topLeft: Point, right: Vect, down: Vect, img: RTImage, numRays: Int): 
 		RDD[((Int, Int), Ray)] = {
