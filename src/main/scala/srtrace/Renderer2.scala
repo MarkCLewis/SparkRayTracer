@@ -8,7 +8,7 @@ import java.awt.image.BufferedImage
 import javax.swing._
 import java.awt.Graphics
 
-object Renderer1 {
+object Renderer2 {
 	def main(args: Array[String]) = {
 		val conf = new SparkConf().setAppName("Renderer1").setMaster("local[*]")
 		val sc = new SparkContext(conf)
@@ -16,7 +16,7 @@ object Renderer1 {
 		sc.setLogLevel("WARN")
 
 		val size = 1000
-		val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,100) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
+		val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,10) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
 		val light = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
 		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
 		val img = new RTImage {
@@ -59,7 +59,16 @@ object Renderer1 {
 	}
 
 	def transform(rays: RDD[((Int, Int), Ray)], geom: Geometry, lights: List[Light]):  RDD[((Int, Int), RTColor)] = {
-		rays.mapValues(ray => RayTrace.castRay(ray, geom, lights, 0))
+		//rays.mapValues(ray => castRay(ray, geom, lights, 0))
+		val geomIDs: RDD[((Int, Int), (Ray, Option[IntersectData]))] = rays.mapValues(ray => (ray, geom intersect ray))
+		val lightStuff: RDD[((Int, Int), (Option[IntersectData, Light]))] = geomIds.flatMap((x, y), (ray, oid) => oid match {
+			case None => ()
+			case Some(id) => {
+				lights.map(light => ((x, y), (Some(id, light))))
+			}
+		})
+		val colors:RDD[((Int, Int), RTColor)] = lightStuff.reduceByKey((((x1:Int, y1:Int), oidl1:Option[IntersectData, Light]), ((x2:Int, y2:Int), oidl2:Option[IntersectData, Light])) => )
+		colors
 	}
 	
 
@@ -71,6 +80,25 @@ object Renderer1 {
 		}
 	}
 
+
+	def castRay(ray: Ray, geom: Geometry, lights: List[Light], cnt: Int): RTColor = {
+    if (cnt > 5) new RTColor(0, 0, 0, 1)
+    else {
+      val oid = geom intersect ray
+      oid match {
+        case None => RTColor.Black
+        case Some(id) => {
+			val geomSize = id.geom.boundingSphere.radius
+			val lightColors = for (light <- lights) yield light.color(id, geom)
+			val refColor = if (id.reflect > 0) {
+            	val refRay = new Ray(id.point + id.norm * 0.0001 * geomSize, ray.dir - id.norm * 2 * (id.norm dot ray.dir))
+            	castRay(refRay, geom, lights, cnt + 1)
+          } else new RTColor(0, 0, 0, 1)
+          	id.color * (lightColors.foldLeft(new RTColor(0, 0, 0, 1))(_ + _)) + refColor
+        }
+      }
+    }
+  }
 	
 }
 
