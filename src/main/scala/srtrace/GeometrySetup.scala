@@ -1,13 +1,26 @@
 package srtrace
 
 import swiftvis2.raytrace._
+import data.CartAndRad
+import java.awt.image.BufferedImage
+import javax.swing._
+import java.net.URL
+
+
+
+
+//Need to load geometry from file. Copy file stuff from akka stuff on github. 
+//Broadcast in Render1
+
+
+  
 
 object GeometrySetup {
     /*
 		randomGeometryArr takes the random generator, then max and min values for x, y, and z, as well as a max radius, and
 		the number of geomSpheres you want. It returns some an array of N randomGeomSpheres
 	*/
-	def randomGeometryArr(rand:util.Random, maxX:Int, minX:Int, maxY:Int, minY:Int, maxZ:Int, minZ:Int, maxRadius:Int, n:Int):Geometry = {
+	def randomGeometryArr(rand:scala.util.Random, maxX:Int, minX:Int, maxY:Int, minY:Int, maxZ:Int, minZ:Int, maxRadius:Int, n:Int):Geometry = {
 		def randGeometry():Geometry = {
 			
 			val x = rand.nextInt(maxX - minX) + minX
@@ -20,4 +33,20 @@ object GeometrySetup {
 		var randGeoms:Array[Geometry] = Array.fill(n)(randGeometry)
 		new ListScene(randGeoms :_ *)
 	}
+
+	def readParticles(): Geometry = {
+		//Pulls the geometry data from the supplied file within the given directory. Assigns the color of the spheres to black.
+  		val carURL = new URL("http://www.cs.trinity.edu/~mlewis/Rings/AMNS-Moonlets/Moonlet4/CartAndRad.6029.bin")
+  		val particles = CartAndRad.readStream(carURL.openStream).map(p => GeomSphere(Point(p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
+		
+		val particleSpheres = particles.map(p => new GeomSphere(p.center, p.radius, _ => RTColor.Red, _ => 0))
+		new KDTreeGeometry(particleSpheres)
+	}
+
+	def ringView1(): (Ray, Geometry, List[Light], Int) = {
+		???
+	}
+
+
+
 }
