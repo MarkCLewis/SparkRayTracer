@@ -43,8 +43,12 @@ object GeometrySetup {
 		new KDTreeGeometry(particleSpheres)
 	}
 
-	def ringView1(): (Ray, Geometry, List[Light], Int) = {
-		???
+	def standardView(): (Point, Point, Vect, Vect) = {
+		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
+	}
+
+	def ringView1(): (Point, Point, Vect, Vect)  = {
+	???
 	}
 
 
