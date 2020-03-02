@@ -20,7 +20,6 @@ object Renderer1 {
 		val geom2 = GeometrySetup.readParticles()
 
 		val braidcastVar = sc.broadcast(geom2)
-		
 		val light = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
 		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
 		val img = new RTImage {
@@ -47,7 +46,6 @@ object Renderer1 {
 		frame.setSize(size, size)
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
 		frame.setVisible(true)
-	
 		sc.stop()
 	}
 
