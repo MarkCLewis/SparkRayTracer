@@ -7,6 +7,7 @@ import swiftvis2.raytrace._
 import java.awt.image.BufferedImage
 import javax.swing._
 import java.awt.Graphics
+import java.awt.peer.LightweightPeer
 
 object Renderer2 {
 	def main(args: Array[String]) = {
@@ -17,8 +18,9 @@ object Renderer2 {
 
 		val size = 1000
 		val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,10) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
-		val light = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
+		val light:List[PointLight] = List(new PointLight(RTColor.Blue, Point(-2.0, 0.0, 2.0)))
 		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+		for(i <- 0 until size; j <- 0 until size) bimg.setRGB(i, j, 0xFF000000)
 		val img = new RTImage {
 			def width = bimg.getWidth()
 			def height = bimg.getHeight()
@@ -29,8 +31,10 @@ object Renderer2 {
 		val numRays = 2
 		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
 		val rays = makeRays(sc, Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0), img, numRays)
-		val colors = transform(rays, geom, light)
-		combineAndSetColors(colors, img, numRays)
+		val rays2 = intersectEye(rays, geom)
+		val rays3 = explodeLights(rays2, light)
+		val rays4 = calcLightColors(rays3, geom)
+		combineAndSetColors(rays4, img, numRays)
 
 		
 
@@ -57,24 +61,63 @@ object Renderer2 {
 		}
 		sc.parallelize(rays)
 	}
-
-	def transform(rays: RDD[((Int, Int), Ray)], geom: Geometry, lights: List[Light]):  RDD[((Int, Int), RTColor)] = {
-		//rays.mapValues(ray => castRay(ray, geom, lights, 0))
-		val geomIDs: RDD[((Int, Int), (Ray, Option[IntersectData]))] = rays.mapValues(ray => (ray, geom intersect ray))
-		val lightStuff: RDD[((Int, Int), (Option[IntersectData, Light]))] = geomIds.flatMap((x, y), (ray, oid) => oid match {
-			case None => ()
-			case Some(id) => {
-				lights.map(light => ((x, y), (Some(id, light))))
-			}
-		})
-		val colors:RDD[((Int, Int), RTColor)] = lightStuff.reduceByKey((((x1:Int, y1:Int), oidl1:Option[IntersectData, Light]), ((x2:Int, y2:Int), oidl2:Option[IntersectData, Light])) => )
-		colors
+	def intersectEye(rays: RDD[((Int, Int), Ray)], geom: Geometry):RDD[((Int, Int), (Ray, Option[IntersectData]))] = {
+		rays.mapValues(ray => (ray, geom intersect ray))
 	}
+	def explodeLights(rayids: RDD[((Int, Int), (Ray, Option[IntersectData]))], lights:List[PointLight]): RDD[((Int, Int), (IntersectData, PointLight))] = {
+		rayids.flatMap(rayid => {
+			explodeLight(rayid, lights)
+		})
+	}
+	def explodeLight(rayid:((Int, Int), (Ray, Option[IntersectData])), lights:List[PointLight]): List[((Int, Int), (IntersectData, PointLight))] = {
+		val ((x:Int, y:Int), (ray:Ray, oid:Option[IntersectData])) = rayid
+		oid match {
+				case None => List[((Int, Int), (IntersectData, PointLight))]()
+				case Some(id:IntersectData) => {
+					val ret:List[((Int, Int), (IntersectData, PointLight))] = lights.map(light => {
+						((x, y), ((id, light)))
+					})
+					ret
+				}
+			}
+	}
+	def calcLightColors(idColors: RDD[((Int, Int), (IntersectData, PointLight))], geom:Geometry): RDD[((Int, Int), RTColor)] = {
+		val groupedByLocation:RDD[((Int, Int), Iterable[(IntersectData, PointLight)])] = idColors.groupByKey()
+		val mapped:RDD[((Int, Int), RTColor)] = groupedByLocation.mapValues(findLightRayValues(_, geom))
+		mapped
+	}
+	def findLightRayValues(lightids: Iterable[(IntersectData, PointLight)], geom:Geometry): RTColor = {
+		var startColor = RTColor(0, 0, 0, 1)
+		for((id:IntersectData, light:PointLight) <- lightids) {
+			val outRay = Ray(id.point + id.norm * 0.0001 * id.geom.boundingSphere.radius, light.point)
+			val oid = geom.intersect(outRay)
+			oid match {
+				case None => startColor = startColor + light.color(id, geom)
+				case Some(lid) => startColor = startColor + RTColor(0, 0, 0, 1)
+			}
+		}
+		startColor
+	}
+	
+	// def transform(rays: RDD[((Int, Int), Ray)], geom: Geometry, lights: List[Light]):  RDD[((Int, Int), RTColor)] = {
+	// 	//rays.mapValues(ray => castRay(ray, geom, lights, 0))
+	// 	val geomIDs: RDD[((Int, Int), (Ray, Option[IntersectData]))] = rays.mapValues(ray => (ray, geom intersect ray))
+	// 	val lightStuff: RDD[((Int, Int), (Option[IntersectData, Light]))] = geomIds.flatMap((x, y), (ray, oid) => oid match {
+	// 		case None => ()
+	// 		case Some(id) => {
+	// 			lights.map(light => ((x, y), (Some(id, light))))
+	// 		}
+	// 	})
+	// 	val colors:RDD[((Int, Int), RTColor)] = lightStuff.reduceByKey(((oidl1, oidl2)) => {
+			
+	// 	})
+	// 	colors
+	// }
 	
 
 	// Not in parallel
 	def combineAndSetColors(colors: RDD[((Int, Int), RTColor)], img: RTImage, numRays: Int): Unit = {
-		val combinedColors = colors.reduceByKey( _ + _ ).mapValues(_/numRays).collect
+		val combinedColors = colors.reduceByKey( _ + _ ).mapValues(rt => (rt/numRays).copy(a=1.0)).collect
 		for( ((x,y) ,c) <- combinedColors) {
 			img.setColor(x,y,c)
 		}
