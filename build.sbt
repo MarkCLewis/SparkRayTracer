@@ -15,3 +15,8 @@ libraryDependencies += "org.apache.spark" %% "spark-graphx" % "2.4.3"
 //libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.4.3" % "provided"
 //libraryDependencies += "org.apache.spark" %% "spark-mllib" % "2.4.3" % "provided"
 //libraryDependencies += "org.apache.spark" %% "spark-graphx" % "2.4.3" % "provided"
+
+assemblyMergeStrategy in assembly := {
+ case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+ case x => MergeStrategy.first
+}
