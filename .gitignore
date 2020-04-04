@@ -63,6 +63,9 @@ local.properties
 # JDT-specific (Eclipse Java Development Tools)		
 .classpath
 
+#IntelliJ IDEA Editor Files
+.idea
+
 ### SBT ###
 # Simple Build Tool
 # http://www.scala-sbt.org/release/docs/Getting-Started/Directories.html#configuring-version-control
