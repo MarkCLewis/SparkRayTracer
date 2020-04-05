@@ -2,6 +2,7 @@ package srtrace
 
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.rdd.RDD
 import swiftvis2.raytrace._
 import java.awt.image.BufferedImage
@@ -11,13 +12,14 @@ import java.awt.peer.LightweightPeer
 
 object Renderer2 {
 	def main(args: Array[String]) = {
-		val conf = new SparkConf().setAppName("Renderer1").setMaster("local[*]")
+		val conf = new SparkConf().setAppName("Renderer2")//.setMaster("spark://pandora00:7077")
 		val sc = new SparkContext(conf)
   
 		sc.setLogLevel("WARN")
 
 		val size = 1000
 		val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,10) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
+		val broadcastVar = sc.broadcast(geom)
 		val light:List[PointLight] = List(new PointLight(RTColor.Blue, Point(-2.0, 0.0, 2.0)))
 		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
 		for(i <- 0 until size; j <- 0 until size) bimg.setRGB(i, j, 0xFF000000)
@@ -31,7 +33,7 @@ object Renderer2 {
 		val numRays = 2
 		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
 		val rays = makeRays(sc, Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0), img, numRays)
-		val rays2 = intersectEye(rays, geom)
+		val rays2 = intersectEye(rays, broadcastVar.value)
 		val rays3 = explodeLights(rays2, light)
 		val rays4 = calcLightColors(rays3, geom)
 		combineAndSetColors(rays4, img, numRays)
