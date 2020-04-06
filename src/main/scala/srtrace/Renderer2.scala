@@ -31,7 +31,7 @@ object Renderer2 {
 		}
 		val numRays = 2
 		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
-		val (eye, topLeft, right, down) = GeometrySetup.ringView1()
+		val (eye, topLeft, right, down) = GeometrySetup.ringView1(2.0e-5)
 		val rays:RDD[((Int, Int), Ray)] = makeRays(sc, eye, topLeft, right, down, img, numRays)
 		val rays2:RDD[((Int, Int), (Ray, Option[IntersectData]))] = intersectEye(rays, broadcastGeom)
 		val rays3:RDD[((Int, Int), (IntersectData, PointLight))] = explodeLights(rays2, light)

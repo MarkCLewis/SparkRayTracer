@@ -50,8 +50,8 @@ object GeometrySetup {
 		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
 	}
 
-	def ringView1(): (Point, Point, Vect, Vect)  = {
-		(Point(0.0, 0.0, 1.0e-5), Point(-1.0e-5, 1.0e-5, 0.0), Vect(2.0e-5, 0.0, 0.0), Vect(0.0, 2.0e-5, 0.0))
+	def ringView1(dist: Double): (Point, Point, Vect, Vect)  = {
+		(Point(0.0, 0.0, dist), Point(-dist, dist, 0.0), Vect(2*dist, 0.0, 0.0), Vect(0.0, 2*dist, 0.0))
 	}
 
 
