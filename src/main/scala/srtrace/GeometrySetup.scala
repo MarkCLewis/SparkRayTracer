@@ -23,19 +23,23 @@ object GeometrySetup {
         the number of geomSpheres you want. It currently returns a ListScene of geometry, which is a subclass of geometry and can
         thus be used in our ray tracing functions.
 	*/
-	def randomGeometryArr(rand:scala.util.Random, maxX:Int, minX:Int, maxY:Int, minY:Int, maxZ:Int, minZ:Int, maxRadius:Int, n:Int):Geometry = {
-		def randGeometry():Geometry = {
-			
-			val x = rand.nextInt(maxX - minX) + minX
-			val y = rand.nextInt(maxY - minY) + minY
-			val z = rand.nextInt(maxZ - minZ) + minZ
-			val rad = rand.nextInt(maxRadius)
+	def randomGeometryArr(rand:scala.util.Random, maxX:Double, minX:Double, maxY:Double, minY:Double, maxZ:Double, minZ:Double, maxRadius:Double, n:Int):Geometry = {
+		var randGeoms:Array[GeomSphere] = randomGeometryActualArr(rand, maxX, minX, maxY, minY, maxZ, minZ, maxRadius, n)
+		new ListScene(randGeoms :_ *)
+	}
+
+	def randomGeometryActualArr(rand:scala.util.Random, maxX:Double, minX:Double, maxY:Double, minY:Double, maxZ:Double, minZ:Double, maxRadius:Double, n:Int):Array[GeomSphere] = {
+		def randGeometry():GeomSphere = {
+			val x = rand.nextDouble *(maxX - minX) + minX
+			val y = rand.nextDouble * (maxY - minY) + minY
+			val z = rand.nextDouble * (maxZ - minZ) + minZ
+			val rad = rand.nextDouble * (maxRadius)
 			val center = new Point(x, y, z)
 			new GeomSphere(center, rad, p => RTColor(0xFFFFFF00), p => 0.0)
 		}
-		var randGeoms:Array[Geometry] = Array.fill(n)(randGeometry)
-		new ListScene(randGeoms :_ *)
+		Array.fill(n)(randGeometry)
 	}
+	
 
 	def readParticles(): Geometry = {
 		//Pulls the geometry data from the supplied file within the given directory. Assigns the color of the spheres to black.
