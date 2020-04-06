@@ -16,8 +16,9 @@ object Renderer2 {
 		sc.setLogLevel("WARN")
 
 		val size = 1000
-		val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,10) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
-		val broadcastGeom = sc.broadcast(geom)
+		//val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,10) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
+		val geom2 = GeometrySetup.readParticles()
+		val broadcastGeom = sc.broadcast(geom2)
 		val light:List[PointLight] = List(new PointLight(RTColor.Blue, Point(-2.0, 0.0, 2.0)))
 		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
 		for(i <- 0 until size; j <- 0 until size) bimg.setRGB(i, j, 0xFF000000)
@@ -30,7 +31,8 @@ object Renderer2 {
 		}
 		val numRays = 2
 		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
-		val rays:RDD[((Int, Int), Ray)] = makeRays(sc, Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0), img, numRays)
+		val (eye, topLeft, right, down) = GeometrySetup.ringView1()
+		val rays:RDD[((Int, Int), Ray)] = makeRays(sc, eye, topLeft, right, down, img, numRays)
 		val rays2:RDD[((Int, Int), (Ray, Option[IntersectData]))] = intersectEye(rays, broadcastGeom)
 		val rays3:RDD[((Int, Int), (IntersectData, PointLight))] = explodeLights(rays2, light)
 		val rays4:RDD[((Int, Int), RTColor)] = calcLightColors(rays3, broadcastGeom)

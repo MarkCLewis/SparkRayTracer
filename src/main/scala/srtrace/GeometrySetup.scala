@@ -51,7 +51,7 @@ object GeometrySetup {
 	}
 
 	def ringView1(): (Point, Point, Vect, Vect)  = {
-	???
+		(Point(0.0, 0.0, 1.0e-5), Point(-1.0e-5, 1.0e-5, 0.0), Vect(2.0e-5, 0.0, 0.0), Vect(0.0, 2.0e-5, 0.0))
 	}
 
 
