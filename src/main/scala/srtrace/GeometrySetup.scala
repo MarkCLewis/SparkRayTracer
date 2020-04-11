@@ -1,11 +1,9 @@
 package srtrace
 
-import swiftvis2.raytrace._
-import java.awt.Graphics
-import data.CartAndRad
-import java.awt.image.BufferedImage
-import javax.swing._
 import java.net.URL
+
+import data.CartAndRad
+import swiftvis2.raytrace._
 
 
 
@@ -45,7 +43,7 @@ object GeometrySetup {
 		//Pulls the geometry data from the supplied file within the given directory. Assigns the color of the spheres to black.
 		val carURL = new URL("http://www.cs.trinity.edu/~mlewis/Rings/AMNS-Moonlets/Moonlet4/CartAndRad.6029.bin")
 		val carURL2 = new URL("http://www.cs.trinity.edu/~mlewis/Rings/AMNS-Moonlets/Moonlet4/CartAndRad.6028.bin")
-  		val particles1 = CartAndRad.readStream(carURL.openStream).map(p => GeomSphere(Point(p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
+		val particles1 = CartAndRad.readStream(carURL.openStream).map(p => GeomSphere(Point(p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
 		val particles2 = CartAndRad.readStream(carURL2.openStream).map(p => GeomSphere(Point(2.0e-5+p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
 		val particles = particles1 ++ particles2
 		val particleSpheres = particles.map(p => new GeomSphere(p.center, p.radius, _ => RTColor.Red, _ => 0))
