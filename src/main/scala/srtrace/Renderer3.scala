@@ -151,6 +151,15 @@ object Renderer3 {
     val idLights:RDD[(Int, ((Int, Int), (IntersectData, PointLight)))] = explodeLights(rayoids, light)
     val colorLocations:RDD[((Int, Int), RTColor)] = calcLightColors(idLights, broadcastGeom)
     combineAndSetColors(colorLocations, img, numRays)
+    val frame = new JFrame {
+      override def paint(g: Graphics): Unit = {
+        g.drawImage(bimg, 0, 0, null)
+      }
+    }
+    frame.setSize(size, size)
+    frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
+    frame.setVisible(true)
+    sc.stop()
   }
 }
 //just went ahead and made this, just in case it turns out to be useful in the future.
