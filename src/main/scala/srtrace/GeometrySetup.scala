@@ -68,8 +68,7 @@ object GeometrySetup {
 		val particles11 = CartAndRad.readStream(carURL11.openStream).map(p => GeomSphere(Point(4*2.0e-5+p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
 		//val particles12 = CartAndRad.readStream(carURL12.openStream).map(p => GeomSphere(Point(5*2.0e-5+p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
 		//val particles13 = CartAndRad.readStream(carURL13.openStream).map(p => GeomSphere(Point(6*2.0e-5+p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
-		val particles = particles1 ++ particles2 ++ particles3 ++ particles4 ++ particles5 ++ particles6 ++ particles7 ++ particles8 ++ 
-			particles9 ++ particles10 ++ particles11 //++ particles12 ++ particles13
+		val particles = particles1 ++ particles2 ++ particles3 ++ particles4 ++ particles5 ++ particles6 ++ particles7 ++ particles8 ++ particles9 ++ particles10 ++ particles11 //++ particles12 ++ particles13
 		val particleSpheres = particles.map(p => new GeomSphere(p.center, p.radius, _ => RTColor.Red, _ => 0))
 		new KDTreeGeometry(particleSpheres)
 	}
