@@ -47,8 +47,8 @@ object GeometrySetup {
 		val carURL4 = new URL("http://www.cs.trinity.edu/~mlewis/Rings/AMNS-Moonlets/Moonlet4/CartAndRad.6028.bin")
   		val particles1 = CartAndRad.readStream(carURL.openStream).map(p => GeomSphere(Point(p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
 		val particles2 = CartAndRad.readStream(carURL2.openStream).map(p => GeomSphere(Point(2.0e-5+p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
-		val particles3 = CartAndRad.readStream(carURL3.openStream).map(p => GeomSphere(Point(p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
-		val particles4 = CartAndRad.readStream(carURL4.openStream).map(p => GeomSphere(Point(2.0e-5+p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
+		val particles3 = CartAndRad.readStream(carURL3.openStream).map(p => GeomSphere(Point(-2.0e-5-p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
+		val particles4 = CartAndRad.readStream(carURL4.openStream).map(p => GeomSphere(Point(2*2.0e-5+p.x, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
 		val particles = particles1 ++ particles2 ++ particles3 ++ particles4
 		val particleSpheres = particles.map(p => new GeomSphere(p.center, p.radius, _ => RTColor.Red, _ => 0))
 		new KDTreeGeometry(particleSpheres)
