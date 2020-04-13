@@ -10,7 +10,7 @@ import swiftvis2.raytrace._
 
 object Renderer2 {
 	def main(args: Array[String]) = {
-		val conf = new SparkConf().setAppName("Renderer2").setMaster("local[*]")//.setMaster("spark://pandora00:7077")
+		val conf = new SparkConf().setAppName("Renderer2")//.setMaster("local[*]")//.setMaster("spark://pandora00:7077")
 		val sc = new SparkContext(conf)
   
 		sc.setLogLevel("WARN")
