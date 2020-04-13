@@ -1,11 +1,9 @@
 package srtrace
 
-import swiftvis2.raytrace._
-import java.awt.Graphics
-import data.CartAndRad
-import java.awt.image.BufferedImage
-import javax.swing._
 import java.net.URL
+
+import data.CartAndRad
+import swiftvis2.raytrace._
 
 
 
