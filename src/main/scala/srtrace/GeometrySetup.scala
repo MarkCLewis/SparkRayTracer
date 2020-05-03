@@ -73,6 +73,10 @@ object GeometrySetup {
 		new KDTreeGeometry(particleSpheres)
 	}
 
+	def readRingWithOffset(step: Int, xoff: Double, yoff: Double): KDTreeGeometry[BoundingBox] = {
+		???
+	}
+
 	def standardView(): (Point, Point, Vect, Vect) = {
 		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
 	}
