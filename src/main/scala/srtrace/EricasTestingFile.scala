@@ -12,10 +12,13 @@ import java.awt.Graphics
 
 object EricasTestingFile {
   def main(args: Array[String]) = {
-    val conf = new SparkConf().setAppName("ETF").setMaster("local[*]")
+    val conf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(conf)
 
     sc.setLogLevel("WARN")
+
+    val size = 1000
+    val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
 
     val partitions = 8
 
@@ -52,7 +55,18 @@ object EricasTestingFile {
         r.mapValues(t => GeometrySetup.readRingWithOffset(t._1, t._2, t._3))
     }
 
-    createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)))
+    println(createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers))).collect().toList)
+
+
+    val frame = new JFrame {
+		override def paint(g: Graphics): Unit = { 
+            g.drawImage(bimg, 0, 0, null)
+		}
+	} 
+	// frame.setSize(size, size)
+	// frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
+	// frame.setVisible(true)
+	sc.stop()
 
   }
 }
