@@ -16,8 +16,8 @@ object Renderer3 {
 
     sc.setLogLevel("WARN")
 
-    val size = 2
-    val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10, -10, 20, 10, 10, -10, 2, 1) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
+    val size = 1200
+    val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10, -10, 20, 10, 10, -10, 2, 10) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
     val broadcastGeom = sc.broadcast(geom)
     val light: List[PointLight] = List(new PointLight(RTColor.Blue, Point(-2.0, 0.0, 2.0)))
     val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
@@ -31,7 +31,7 @@ object Renderer3 {
         bimg.setRGB(x, y, color.toARGB)
       }
     }
-    val numRays = 2
+    val numRays = 1
 
     def makeNPartitionsRays(sc: SparkContext, eye: Point, topLeft: Point, right: Vect, down: Vect, img: RTImage, numPartitions: Int, numRays: Int):
     RDD[(Int, ((Int, Int), Ray))] = {
@@ -140,31 +140,35 @@ object Renderer3 {
     val diff = maxX - minX
     val numPartitions = 8
     val interval = diff / numPartitions
-    val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 1))
-    println("\n\nARRGEOMS PRINTING NOW")
-    arrGeoms.collect.foreach(println)
+    val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5))
+    // println("\n\nARRGEOMS PRINTING NOW")
+    // arrGeoms.collect.foreach(println)
     val keyedGeoms:RDD[(Int, GeomSphere)] = arrGeoms.map(iGeom => ((iGeom.center.x - minX) / diff * numPartitions).toInt -> iGeom).repartition(numPartitions)
-    println("\n\nKEYEDGEOMs PRINTING NOW")
-    keyedGeoms.collect.foreach(println)
+    // println("\n\nKEYEDGEOMs PRINTING NOW")
+    // keyedGeoms.collect.foreach(println)
     val groupedGeoms:RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map{case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq)}
-    println("\n\nGROUPEDGEOMS PRINTING NOW")
-    groupedGeoms.collect.foreach(println)
-    val (eye, topLeft, right, down) = GeometrySetup.ringView1(2.0e-5)
+    // println("\n\nGROUPEDGEOMS PRINTING NOW")
+    // groupedGeoms.collect.foreach(println)
+    val (eye, topLeft, right, down) = GeometrySetup.standardView()
     val dupedRays:RDD[(Int, ((Int, Int), Ray))] = makeNPartitionsRays(sc, eye, topLeft, right, down, img, numPartitions, numRays)
-    println("\n\nDUPEDRAYS PRINTING NOW")
-    dupedRays.collect.foreach(println)
+    // println("\n\nDUPEDRAYS PRINTING NOW")
+    // dupedRays.collect.foreach(println)
     val rayGeoms:RDD[(Int, (((Int, Int), Ray), Geometry))] = dupedRays.join(groupedGeoms)
-    println("\n\nRAYGEOMS PRINTING NOW")
-    rayGeoms.collect.foreach(println)
+    // println("\n\nRAYGEOMS PRINTING NOW")
+    // rayGeoms.collect.foreach(println)
     val rayoids:RDD[(Int, ((Int, Int), (Ray, Option[IntersectData])))] = intersectEye(rayGeoms)
-    println("\n\nRAYOIDS PRINTING NOW")
-    rayoids.collect.foreach(println)
+    // println("\n\nRAYOIDS PRINTING NOW")
+    // rayoids.collect.foreach(println)
+
+    // Collapse to one intersect per pixel. (Minimum by id.time.)
+    // Explode needs to re-distribute. Explode in lights and then in geometry partitions.
+
     val idLights:RDD[(Int, ((Int, Int), (IntersectData, PointLight)))] = explodeLights(rayoids, light)
-    println("\n\nIDLIGHTS PRINTING NOW")
-    idLights.collect.foreach(println)
+    // println("\n\nIDLIGHTS PRINTING NOW")
+    // idLights.collect.foreach(println)
     val colorLocations:RDD[((Int, Int), RTColor)] = calcLightColors(idLights, broadcastGeom)
-    println("\n\nCOLORLOCATIONS PRINTING NOW")
-    colorLocations.collect.foreach(println)
+    // println("\n\nCOLORLOCATIONS PRINTING NOW")
+    // colorLocations.collect.foreach(println)
     combineAndSetColors(colorLocations, img, numRays)
     val frame = new JFrame {
       override def paint(g: Graphics): Unit = {
