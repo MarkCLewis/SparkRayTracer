@@ -55,7 +55,7 @@ object EricasTestingFile {
         r.mapValues(t => GeometrySetup.readRingWithOffset(t._1, t._2, t._3))
     }
 
-    println(createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers))).collect().toList)
+    println(createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers))).count())
 
 
     val frame = new JFrame {
