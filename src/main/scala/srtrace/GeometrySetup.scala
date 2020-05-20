@@ -88,6 +88,11 @@ object GeometrySetup {
 		(Point(0.0, 0.0, dist), Point(-dist, dist, 0.0), Vect(2*dist, 0.0, 0.0), Vect(0.0, 2*dist, 0.0))
 	}
 
+	def fixedSpheres(): Array[GeomSphere] = {
+		// Put a fixed scene in where we know what it looks like.
+		Array.empty
+	}
+
 
 
 }
