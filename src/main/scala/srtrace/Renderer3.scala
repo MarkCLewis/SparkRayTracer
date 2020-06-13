@@ -17,7 +17,7 @@ object Renderer3 {
     sc.setLogLevel("WARN")
 
     val size = 1200
-    val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10, -10, 20, 10, 10, -10, 2, 20) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
+    //val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 5, -5, 20, 10, 5, -5, 2, 20) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
     //val broadcastGeom = sc.broadcast(geom)
     val light: List[PointLight] = List(new PointLight(RTColor.Blue, Point(-2.0, 0.0, 2.0)))
     val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
@@ -121,6 +121,38 @@ object Renderer3 {
       }
     }
 
+    def makeRaysToLights(idLights: RDD[(Int, ((Int, Int), (IntersectData, PointLight)))], numPartitions:Int):RDD[(Int, ((Int, Int), Ray, RTColor))] = {
+      val repart: RDD[(Int, ((Int, Int), (IntersectData, PointLight)))] = idLights.values.flatMap(x => {
+        for (i <- 0 until numPartitions) yield {
+          (i, x)
+        }
+      })
+      val lightRays: RDD[(Int, ((Int, Int), Ray, RTColor))] = repart.map(elem => {
+        val (n, pixIDLights) = elem
+        val ((x, y), (id, pl)) = pixIDLights
+        val loc = id.point
+        val li = pl.point
+        val c = pl.col
+        (n, ((x, y), Ray(loc, li), c))
+      })
+      lightRays
+    }
+
+    def checkLightRaysForGeomIntersections(lightRays:RDD[(Int, ((Int, Int), Ray, RTColor))], geom:RDD[(Int, Geometry)]):RDD[(Int, ((Int, Int), (Ray, Option[IntersectData], RTColor)))] = {
+      val joined: RDD[(Int, (((Int, Int), Ray, RTColor), Geometry))] = lightRays.join(geom)
+      val withOIDs: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData], RTColor)))] = joined.map(elem => {
+        val (n, (((x, y), ray, l), geom)) = elem
+        (n, ((x, y), (ray, (geom intersect ray), l)))
+      })
+      withOIDs.filter(elem => {
+        val (n, ((x, y), (ray, oid, col))) = elem
+        oid != None
+      })
+    }
+
+
+    //total rework needed
+    /*
     def calcLightColors(idLights: RDD[(Int, ((Int, Int), (IntersectData, PointLight)))], geom:Geometry): RDD[((Int, Int), RTColor)] = {
       val noInds = idLights.values
       val groupedByLocation: RDD[((Int, Int), Iterable[(IntersectData, PointLight)])] = noInds.groupByKey()
@@ -140,10 +172,29 @@ object Renderer3 {
       }
       startColor
     }
+    //^^^^
+    */
 
+    def bugFixer4000(bug: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData], RTColor)))]):RDD[((Int, Int), RTColor)] = {
+      val noPartitions: RDD[((Int, Int), (Ray, Option[IntersectData], RTColor))] = bug.values
+      val groupedByPixel:RDD[((Int, Int), Iterable[(Ray, Option[IntersectData], RTColor)])] = noPartitions.groupByKey()
+      val shortestID: RDD[((Int, Int), (Ray, Option[IntersectData], RTColor))] = groupedByPixel.map(x => {
+        val (pix, iter) = x
+        (pix, iter.minBy(y => {
+          val (r, oid, rtColor) = y
+          oid.get.time
+        }))
+      })
+      shortestID.map(x => {
+        val (n, (r, oid, rtColor)) = x
+        (n, rtColor)
+      })
+    }
 
+    
     def combineAndSetColors(colors: RDD[((Int, Int), RTColor)], img: RTImage, numRays: Int): Unit = {
       val combinedColors = colors.reduceByKey(_ + _).mapValues(rt => (rt / numRays).copy(a = 1.0)).collect
+
       for (((x, y), c) <- combinedColors.par) {
         img.setColor(x, y, c)
       }
@@ -174,7 +225,7 @@ object Renderer3 {
     val numPartitions = 8
     val interval = diff / numPartitions
     val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5))
-    // println("\n\nARRGEOMS PRINTING NOW")
+    // println("\n\nARRGEOMS PRINTING NOW")g
     // arrGeoms.collect.foreach(println)
     val keyedGeoms:RDD[(Int, GeomSphere)] = arrGeoms.map(iGeom => ((iGeom.center.x - minX) / diff * numPartitions).toInt -> iGeom).repartition(numPartitions)
     // println("\n\nKEYEDGEOMs PRINTING NOW")
@@ -200,10 +251,21 @@ object Renderer3 {
     val idLights:RDD[(Int, ((Int, Int), (IntersectData, PointLight)))] = explodeLights(rayoids, light)
     // println("\n\nIDLIGHTS PRINTING NOW")
     // idLights.collect.foreach(println)
-    val colorLocations:RDD[((Int, Int), RTColor)] = calcLightColors(idLights, geom)
+    //val colorLocations:RDD[((Int, Int), RTColor)] = calcLightColors(idLights, ???)
+
+    val lightColors: RDD[(Int, ((Int, Int), Ray, RTColor))] = makeRaysToLights(idLights, numPartitions)
+
+    val idRDD: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData], RTColor)))] = checkLightRaysForGeomIntersections(lightColors, groupedGeoms)
+
+    val colors: RDD[((Int, Int), RTColor)] = bugFixer4000(idRDD)
+
+
     // println("\n\nCOLORLOCATIONS PRINTING NOW")
     // colorLocations.collect.foreach(println)
-    combineAndSetColors(colorLocations, img, numRays)
+
+
+
+    combineAndSetColors(colors, img, numRays)
     val frame = new JFrame {
       override def paint(g: Graphics): Unit = {
         g.drawImage(bimg, 0, 0, null)

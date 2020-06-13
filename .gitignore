@@ -8,6 +8,7 @@
 .metadata
 bin/
 tmp/
+CartAndRad.*.bin
 *.tmp
 *.bak
 *.swp
