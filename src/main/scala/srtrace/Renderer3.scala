@@ -92,7 +92,7 @@ object Renderer3 {
 
     // Collapse to one intersect per pixel. (Minimum by id.time.)
     // Explode needs to re-distribute. Explode in lights and then in geometry partitions.
-    def bugFixer2000(bug: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData])))]):RDD[((Int, Int), (Ray, Option[IntersectData]))] = {
+    def departitionAndFindShortest(bug: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData])))]):RDD[((Int, Int), (Ray, Option[IntersectData]))] = {
       val noPartitions = bug.values
       val groupedByPixel:RDD[((Int, Int), Iterable[(Ray, Option[IntersectData])])] = noPartitions.groupByKey()
       val shortestIDs:RDD[((Int, Int), (Ray, Option[IntersectData]))] = groupedByPixel.mapValues(x => {
@@ -176,7 +176,7 @@ object Renderer3 {
     //^^^^
     */
 
-    def bugFixer4000(bug: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData], RTColor)))]):RDD[((Int, Int), RTColor)] = {
+    def generateColors(bug: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData], RTColor)))]):RDD[((Int, Int), RTColor)] = {
       val noPartitions: RDD[((Int, Int), (Ray, Option[IntersectData], RTColor))] = bug.values
       val groupedByPixel:RDD[((Int, Int), Iterable[(Ray, Option[IntersectData], RTColor)])] = noPartitions.groupByKey()
       /*val shortestID: RDD[((Int, Int), (Ray, Option[IntersectData], RTColor))] = groupedByPixel.map(x => {
@@ -254,7 +254,7 @@ object Renderer3 {
     // println("\n\nRAYOIDS PRINTING NOW")
     // rayoids.collect.foreach(println)
 
-    val fixBroken:RDD[((Int, Int), (Ray, Option[IntersectData]))] = bugFixer2000(rayoids)
+    val fixBroken:RDD[((Int, Int), (Ray, Option[IntersectData]))] = departitionAndFindShortest(rayoids)
     // Collapse to one intersect per pixel. (Minimum by id.time.)
     // Explode needs to re-distribute. Explode in lights and then in geometry partitions.
 
@@ -267,7 +267,7 @@ object Renderer3 {
 
     val idRDD: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData], RTColor)))] = checkLightRaysForGeomIntersections(lightColors, groupedGeoms)
 
-    val colors: RDD[((Int, Int), RTColor)] = bugFixer4000(idRDD)
+    val colors: RDD[((Int, Int), RTColor)] = generateColors(idRDD)
 
 
     // println("\n\nCOLORLOCATIONS PRINTING NOW")
