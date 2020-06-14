@@ -133,7 +133,8 @@ object Renderer3 {
         val loc = id.point
         val li = pl.point
         val c = pl.col
-        (n, ((x, y), Ray(loc, li), c))
+        (n, ((x, y), Ray(id.point + id.norm * 0.0001 * id.geom.boundingSphere.radius, li), c))
+
       })
       lightRays
     }
