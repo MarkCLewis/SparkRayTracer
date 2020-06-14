@@ -133,7 +133,7 @@ object Renderer3 {
         val loc = id.point
         val li = pl.point
         val c = pl.col
-        (n, ((x, y), Ray(id.point + id.norm * 0.0001 * id.geom.boundingSphere.radius, li), c))
+        (n, ((x, y), Ray(loc + id.norm * 0.0001 * id.geom.boundingSphere.radius, li), c))
 
       })
       lightRays
@@ -147,7 +147,7 @@ object Renderer3 {
       })
       withOIDs.filter(elem => {
         val (n, ((x, y), (ray, oid, col))) = elem
-        oid != None
+        oid == None
       })
     }
 
@@ -179,16 +179,25 @@ object Renderer3 {
     def bugFixer4000(bug: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData], RTColor)))]):RDD[((Int, Int), RTColor)] = {
       val noPartitions: RDD[((Int, Int), (Ray, Option[IntersectData], RTColor))] = bug.values
       val groupedByPixel:RDD[((Int, Int), Iterable[(Ray, Option[IntersectData], RTColor)])] = noPartitions.groupByKey()
-      val shortestID: RDD[((Int, Int), (Ray, Option[IntersectData], RTColor))] = groupedByPixel.map(x => {
+      /*val shortestID: RDD[((Int, Int), (Ray, Option[IntersectData], RTColor))] = groupedByPixel.map(x => {
         val (pix, iter) = x
         (pix, iter.minBy(y => {
           val (r, oid, rtColor) = y
           oid.get.time
         }))
-      })
-      shortestID.map(x => {
+      })*/
+      groupedByPixel.map(elem => {
+        val ((x, y), iter) = elem
+        var startColor = RTColor(0, 0, 0, 1)
+        iter.map(i => {
+          val (r, oid, rtCol) = i
+          startColor += rtCol
+        })
+        /*
         val (n, (r, oid, rtColor)) = x
         (n, rtColor)
+        */
+        ((x, y), startColor)
       })
     }
 
