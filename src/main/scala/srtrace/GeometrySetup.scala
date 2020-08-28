@@ -85,8 +85,8 @@ object GeometrySetup {
 		//eye, topLeft, right, down
 	}
 	def makeTwoSpheresIntersecting():Array[GeomSphere] = {
-		val arr:Array[GeomSphere] = Array(new GeomSphere(Point(1.0, 4.0, 1.0), 3.0, p => RTColor(0xFFFFFF00), p=> 0.0),
-			new GeomSphere(Point(3.0, 4.0, 1.0), 3.0, p => RTColor(0xFFFFFF00), p=> 0.0))
+		val arr:Array[GeomSphere] = Array(new GeomSphere(Point(1.0, 6.0, 1.0), 3.0, p => RTColor(0xFFFFFF00), p=> 0.0),
+			new GeomSphere(Point(2.0, 6.0, 1.0), 3.0, p => RTColor(0xFFFFFF00), p=> 0.0))
 		arr
 	}
 	def makeTwoSpheresVisuallyIntersecting():Array[GeomSphere] = {

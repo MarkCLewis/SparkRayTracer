@@ -73,11 +73,11 @@ object Renderer3 {
       var currentRay:Option[Ray] = None
       while(iter.hasNext) {
         val (ray, oid):(Ray, Option[IntersectData]) = iter.next
-        if(currentRay == None || currentMinID == None) {
+        if(currentRay.isEmpty || currentMinID.isEmpty) {
           currentRay = Some(ray)
           currentMinID = oid
         } else {
-          if(oid != None) {
+          if(oid.isDefined) {
             if(currentMinID.get.time > oid.get.time) {
               currentRay = Some(ray)
               currentMinID = oid
@@ -99,15 +99,22 @@ object Renderer3 {
      })
       shortestIDs
     }
-
-    def explodeLights(rayids: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData])))], lights: List[PointLight]): RDD[(Int, ((Int, (Int, Int)), (IntersectData, PointLight)))] = {
-      rayids.flatMapValues(rayidi => {
+    def makeColorsForShortests(rdd: RDD[((Int, Int), (Ray, Option[IntersectData]))]):RDD[((Int, Int), RTColor)] = {
+      rdd.map(elem => {
+        val ((x, y), (ray, oid)) = elem
+        val col = if(oid.isDefined) (new RTColor(1, 1, 1, 1)) / oid.get.time
+                  else new RTColor(0, 0, 0, 0)
+        ((x, y), col)
+      })
+    }
+    def explodeLights(rayids: RDD[((Int, Int), (Ray, Option[IntersectData]))], lights: List[PointLight]): RDD[((Int, (Int, Int)), (IntersectData, PointLight))] = {
+      rayids.flatMap(rayidi => {
         val rayid = rayidi
         explodeLight(rayid, lights)
       })
     }
 
-    def explodeLight(rayid: ((Int, Int), (Ray, Option[IntersectData])), lights: List[PointLight]): List[((Int, (Int, Int)), (IntersectData, PointLight))] = {
+    def explodeLight(rayid: ((Int, Int), (Ray, Option[IntersectData])), lights: List[PointLight]): Seq[((Int, (Int, Int)), (IntersectData, PointLight))] = {
       val ((x: Int, y: Int), (ray: Ray, oid: Option[IntersectData])) = rayid
       oid match {
         case None => List[((Int, (Int, Int)), (IntersectData, PointLight))]()
@@ -120,8 +127,8 @@ object Renderer3 {
       }
     }
 
-    def makeRaysToLights(idLights: RDD[(Int, ((Int, (Int, Int)), (IntersectData, PointLight)))], numPartitions:Int):RDD[(Int, ((Int, (Int, Int)), Ray, RTColor, IntersectData))] = {
-      val repart: RDD[(Int, ((Int, (Int, Int)), (IntersectData, PointLight)))] = idLights.values.flatMap(x => {
+    def makeRaysToLights(idLights: RDD[((Int, (Int, Int)), (IntersectData, PointLight))], numPartitions:Int):RDD[(Int, ((Int, (Int, Int)), Ray, RTColor, IntersectData))] = {
+      val repart: RDD[(Int, ((Int, (Int, Int)), (IntersectData, PointLight)))] = idLights.flatMap(x => {
         for (i <- 0 until numPartitions) yield {
           (i, x)
         }
@@ -228,8 +235,8 @@ object Renderer3 {
     val numPartitions = 8
     val interval = diff / numPartitions
     //val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
-    //val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresVisuallyIntersecting()) //only for testing visual intersections
-    val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresIntersecting()) //only for testing physical intersections
+    val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresVisuallyIntersecting()) //only for testing visual intersections
+    //val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresIntersecting()) //only for testing physical intersections
     // println("\n\nARRGEOMS PRINTING NOW")g
     // arrGeoms.collect.foreach(println)
     val keyedGeoms:RDD[(Int, GeomSphere)] = arrGeoms.map(iGeom => ((iGeom.center.x - minX) / diff * numPartitions).toInt -> iGeom).repartition(numPartitions)
@@ -252,8 +259,9 @@ object Renderer3 {
     val fixBroken:RDD[((Int, Int), (Ray, Option[IntersectData]))] = departitionAndFindShortest(rayoids)
     // Collapse to one intersect per pixel. (Minimum by id.time.)
     // Explode needs to re-distribute. Explode in lights and then in geometry partitions.
-
-    val idLights: RDD[(Int, ((Int, (Int, Int)), (IntersectData, PointLight)))] = explodeLights(rayoids, light)
+    //val shortestCols = makeColorsForShortests((fixBroken))
+    //combineAndSetColors(shortestCols, img, numRays) // renders the shortest cols
+    val idLights: RDD[((Int, (Int, Int)), (IntersectData, PointLight))] = explodeLights(fixBroken, light)
     // println("\n\nIDLIGHTS PRINTING NOW")
     // idLights.collect.foreach(println)
     //val colorLocations:RDD[((Int, Int), RTColor)] = calcLightColors(idLights, ???)
