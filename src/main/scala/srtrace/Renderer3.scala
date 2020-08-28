@@ -198,7 +198,6 @@ object Renderer3 {
     
     def combineAndSetColors(colors: RDD[((Int, Int), RTColor)], img: RTImage, numRays: Int): Unit = {
       val combinedColors = colors.reduceByKey(_ + _).mapValues(rt => (rt / numRays).copy(a = 1.0)).collect
-
       for (((x, y), c) <- combinedColors.par) {
         img.setColor(x, y, c)
       }
@@ -228,7 +227,9 @@ object Renderer3 {
     val diff = maxX - minX
     val numPartitions = 8
     val interval = diff / numPartitions
-    val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5))
+    //val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
+    //val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresVisuallyIntersecting()) //only for testing visual intersections
+    val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresIntersecting()) //only for testing physical intersections
     // println("\n\nARRGEOMS PRINTING NOW")g
     // arrGeoms.collect.foreach(println)
     val keyedGeoms:RDD[(Int, GeomSphere)] = arrGeoms.map(iGeom => ((iGeom.center.x - minX) / diff * numPartitions).toInt -> iGeom).repartition(numPartitions)
