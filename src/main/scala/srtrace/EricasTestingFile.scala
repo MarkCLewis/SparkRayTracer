@@ -27,7 +27,7 @@ object EricasTestingFile {
     // 6000, 6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009, 6010, 6011, 6012, 6013, 6014, 6015, 6016, 6017,
     // 6018, 6019, 6020, 6021, 6022, 6023, 6024, 6025,6026, 6027, 6028, 6029)
 
-    val offsets = Array[(Double, Double)]((0,0), (2.0e-5, 0), (-2.0e-5, 0), (2*2.0e-5, 0), (-2*2.0e-5, 0), 
+    val offsets = Array[(Double, Double)]((0,0), (2.0e-5, 0), (-2.0e-5, 0), (2*2.0e-5, 0), (-2*2.0e-5, 0), //5
         (0, 2.0e-5), (0, -2.0e-5), (0, 2*2.0e-5))//, (0, -2*2.0e-5))
 
 
@@ -57,19 +57,10 @@ object EricasTestingFile {
 
     //println(createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers))).count())
 
-    var kd = createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)))
+    // var kd = createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)))
 
-    println(kd.map(_._2.boundingSphere).collect().toList)
+    // println(kd.map(_._2.boundingSphere).collect().toList)
 
-
-    val frame = new JFrame {
-		override def paint(g: Graphics): Unit = { 
-            g.drawImage(bimg, 0, 0, null)
-		}
-	} 
-	// frame.setSize(size, size)
-	// frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
-	// frame.setVisible(true)
 	sc.stop()
 
   }
