@@ -32,12 +32,13 @@ object Renderer2 {
 		val numRays = 2
 		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
 		val (eye, topLeft, right, down) = GeometrySetup.ringView1(3.0e-5)
+		val start = System.nanoTime()
 		val rays:RDD[((Int, Int), Ray)] = makeRays(sc, eye, topLeft, right, down, img, numRays)
 		val rays2:RDD[((Int, Int), (Ray, Option[IntersectData]))] = intersectEye(rays, broadcastGeom)
 		val rays3:RDD[((Int, Int), (IntersectData, PointLight))] = explodeLights(rays2, light)
 		val rays4:RDD[((Int, Int), RTColor)] = calcLightColors(rays3, broadcastGeom)
 		combineAndSetColors(rays4, img, numRays)
-
+		println(s"Seconds taken: ${(System.nanoTime()-start)/1e9}")
 		
 
 		val frame = new JFrame {

@@ -8,6 +8,8 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
 import swiftvis2.raytrace._
 
+// TODO: Put in some meaningful case classes so we don't have tuples everywhere.
+
 object Renderer3 {
   def main(args: Array[String]) = {
     val conf = new SparkConf().setAppName("Renderer3").setMaster("local[*]")
@@ -211,31 +213,13 @@ object Renderer3 {
     }
 
 
-//    def castRay(ray: Ray, bGeom: Broadcast[Geometry], lights: List[Light], cnt: Int): RTColor = {
-//      if (cnt > 5) new RTColor(0, 0, 0, 1)
-//      else {
-//        val oid = (bGeom.value) intersect ray
-//        oid match {
-//          case None => RTColor.Black
-//          case Some(id) => {
-//            val geomSize = id.geom.boundingSphere.radius
-//            val lightColors = for (light <- lights) yield light.color(id, bGeom.value)
-//            val refColor = if (id.reflect > 0) {
-//              val refRay = new Ray(id.point + id.norm * 0.0001 * geomSize, ray.dir - id.norm * 2 * (id.norm dot ray.dir))
-//              castRay(refRay, bGeom, lights, cnt + 1)
-//            } else new RTColor(0, 0, 0, 1)
-//            id.color * (lightColors.foldLeft(new RTColor(0, 0, 0, 1))(_ + _)) + refColor
-//          }
-//        }
-//      }
-//    }
     val minX = -10.0
     val maxX = 10.0 //for use in arrGeoms
     val diff = maxX - minX
     val numPartitions = 8
     val interval = diff / numPartitions
-    //val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
-    val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresVisuallyIntersecting()) //only for testing visual intersections
+    val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
+    // val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresVisuallyIntersecting()) //only for testing visual intersections
     //val arrGeoms:RDD[GeomSphere] = sc.parallelize(GeometrySetup.makeTwoSpheresIntersecting()) //only for testing physical intersections
     // println("\n\nARRGEOMS PRINTING NOW")g
     // arrGeoms.collect.foreach(println)
