@@ -1,7 +1,5 @@
 package srtrace
 
-package srtrace
-
 import java.awt.image.BufferedImage
 
 import org.apache.spark.SparkContext
@@ -10,7 +8,7 @@ import swiftvis2.raytrace._
 
 // TODO: Put in some meaningful case classes so we don't have tuples everywhere.
 
-object Renderer3 {
+object EricasR3 {
 
 
   def render(sc: SparkContext, groupedGeoms: RDD[(Int, Geometry)], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int = 8): Unit = {
