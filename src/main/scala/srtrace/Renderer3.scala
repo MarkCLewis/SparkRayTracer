@@ -11,7 +11,7 @@ import swiftvis2.raytrace._
 object Renderer3 {
 
 
-  def render(sc: SparkContext, geom: RDD[GeomSphere], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int = 8, minX: Double, maxX: Double): Unit = {
+  def render(sc: SparkContext, groupedGeoms: RDD[(Int, Geometry)], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int = 8): Unit = {
 
     val img = new RTImage {
       def width = bImg.getWidth()
@@ -23,11 +23,7 @@ object Renderer3 {
       }
     }
     for (i <- 0 until size; j <- 0 until size) bImg.setRGB(i, j, 0xFF000000)
-    val diff = maxX - minX
 
-
-    val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / diff * numPartitions).toInt -> iGeom).repartition(numPartitions)
-    val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
     val dupedRays: RDD[(Int, ((Int, Int), Ray))] = makeNPartitionsRays(sc, view._1, view._2, view._3, view._4, img, numPartitions, numRays)
     val rayGeoms: RDD[(Int, (((Int, Int), Ray), Geometry))] = dupedRays.join(groupedGeoms)
     val rayoids: RDD[(Int, ((Int, Int), (Ray, Option[IntersectData])))] = intersectEye(rayGeoms)
