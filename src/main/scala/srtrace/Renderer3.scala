@@ -56,18 +56,7 @@ object Renderer3 {
     })
     sc.parallelize(rays)
   }
-
-
-  private def makeRays(sc: SparkContext, eye: Point, topLeft: Point, right: Vect, down: Vect, img: RTImage, numRays: Int): RDD[((Int, Int), Ray)] = {
-    //make rays in a scala collection
-    val aspect = img.width.toDouble / img.height
-    val rays = for (i <- 0 until img.width; j <- 0 until img.height; index <- 0 until numRays) yield {
-      ((i, j), Ray(eye, topLeft + right * (aspect * (i + (if (index > 0) math.random * 0.75 else 0)) / img.width)
-        + down * (j + (if (index > 0) math.random * 0.75 else 0)) / img.height))
-    }
-    sc.parallelize(rays)
-  }
-
+  
   private def intersectEye(rayGeoms: RDD[(Int, (((Int, Int), Ray), Geometry))]): RDD[(Int, ((Int, Int), (Ray, Option[IntersectData])))] = {
     rayGeoms.map(indiv => {
       val (n, (((x, y), ray), geom)) = indiv
@@ -106,15 +95,6 @@ object Renderer3 {
       findShortest(x)
     })
     shortestIDs
-  }
-
-  private def makeColorsForShortests(rdd: RDD[((Int, Int), (Ray, Option[IntersectData]))]): RDD[((Int, Int), RTColor)] = {
-    rdd.map(elem => {
-      val ((x, y), (ray, oid)) = elem
-      val col = if (oid.isDefined) (new RTColor(1, 1, 1, 1)) / oid.get.time
-      else new RTColor(0, 0, 0, 0)
-      ((x, y), col)
-    })
   }
 
   private def explodeLights(rayids: RDD[((Int, Int), (Ray, Option[IntersectData]))], lights: List[PointLight]): RDD[((Int, (Int, Int)), (IntersectData, PointLight))] = {
@@ -178,7 +158,6 @@ object Renderer3 {
 
   private def generateColors(bug: RDD[((Int, Int), (Ray, Option[IntersectData], RTColor, IntersectData))]): RDD[((Int, Int), RTColor)] = {
     val groupedByPixel: RDD[((Int, Int), Iterable[(Ray, Option[IntersectData], RTColor, IntersectData)])] = bug.groupByKey()
-
     groupedByPixel.map(elem => {
       val ((x, y), iter: Iterable[(Ray, Option[IntersectData], RTColor, IntersectData)]) = elem
       val color = iter.map(i => {
