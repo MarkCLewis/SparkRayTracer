@@ -1,5 +1,7 @@
 .bloop
 .metals
+.vscode
+project/project
 
 # Created by https://www.gitignore.io/api/sbt,scala,eclipse
 
@@ -8,6 +10,7 @@
 .metadata
 bin/
 tmp/
+CartAndRad.*.bin
 *.tmp
 *.bak
 *.swp

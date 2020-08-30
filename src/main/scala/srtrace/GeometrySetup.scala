@@ -28,16 +28,16 @@ object GeometrySetup {
 
 	def randomGeometryActualArr(rand:scala.util.Random, maxX:Double, minX:Double, maxY:Double, minY:Double, maxZ:Double, minZ:Double, maxRadius:Double, n:Int):Array[GeomSphere] = {
 		def randGeometry():GeomSphere = {
-			val x = rand.nextDouble *(maxX - minX) + minX
+			val x = rand.nextDouble * (maxX - minX) + minX
 			val y = rand.nextDouble * (maxY - minY) + minY
 			val z = rand.nextDouble * (maxZ - minZ) + minZ
-			val rad = rand.nextDouble * (maxRadius)
+			val rad = 3 //rand.nextDouble * (maxRadius)
 			val center = new Point(x, y, z)
 			new GeomSphere(center, rad, p => RTColor(0xFFFFFF00), p => 0.0)
 		}
 		Array.fill(n)(randGeometry)
 	}
-	
+
 
 	def readParticles(): Geometry = {
 		//Pulls the geometry data from the supplied file within the given directory. Assigns the color of the spheres to black.
@@ -82,10 +82,25 @@ object GeometrySetup {
 
 	def standardView(): (Point, Point, Vect, Vect) = {
 		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
+		//eye, topLeft, right, down
 	}
-
+	def makeTwoSpheresIntersecting():Array[GeomSphere] = {
+		val arr:Array[GeomSphere] = Array(new GeomSphere(Point(1.0, 6.0, 1.0), 3.0, p => RTColor(0xFFFFFF00), p=> 0.0),
+			new GeomSphere(Point(2.0, 6.0, 1.0), 3.0, p => RTColor(0xFFFFFF00), p=> 0.0))
+		arr
+	}
+	def makeTwoSpheresVisuallyIntersecting():Array[GeomSphere] = {
+		val arr:Array[GeomSphere] = Array(new GeomSphere(Point(1.0, 4.0, 1.0), 3.0, p => RTColor(0xFFFFFF00), p=> 0.0),
+			new GeomSphere(Point(3.0, 8.0, 1.0), 3.0, p => RTColor(0xFFFFFF00), p=> 0.0))
+		arr
+	}
 	def ringView1(dist: Double): (Point, Point, Vect, Vect)  = {
 		(Point(0.0, 0.0, dist), Point(-dist, dist, 0.0), Vect(2*dist, 0.0, 0.0), Vect(0.0, 2*dist, 0.0))
+	}
+
+	def fixedSpheres(): Array[GeomSphere] = {
+		// Put a fixed scene in where we know what it looks like.
+		Array.empty
 	}
 
 
