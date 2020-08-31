@@ -35,7 +35,6 @@ object Renderer3 {
 
 
     combineAndSetColors(colors, img, numRays)
-    sc.stop()
   }
 
   private def makeNPartitionsRays(sc: SparkContext, eye: Point, topLeft: Point, right: Vect, down: Vect, img: RTImage, numPartitions: Int, numRays: Int):
