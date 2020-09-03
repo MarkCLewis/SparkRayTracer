@@ -77,7 +77,7 @@ object GeometrySetup {
 		val carURL = new URL("http://www.cs.trinity.edu/~mlewis/Rings/AMNS-Moonlets/Moonlet4/CartAndRad." + step.toString + ".bin")
 		val particles = CartAndRad.readStream(carURL.openStream).map(p => GeomSphere(Point(p.x + xoff, p.y + yoff, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
 		val particleSpheres = particles.map(p => new GeomSphere(p.center, p.radius, _ => RTColor.Red, _ => 0))
-		new KDTreeGeometry(particleSpheres)
+		new KDTreeGeometry[BoundingSphere](particleSpheres)
 	}
 
 	def standardView(): (Point, Point, Vect, Vect) = {
