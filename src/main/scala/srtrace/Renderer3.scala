@@ -25,7 +25,7 @@ object Renderer3 {
     for (i <- 0 until size; j <- 0 until size) bImg.setRGB(i, j, 0xFF000000)
 
     val dupedRays: RDD[(Int, (Pixel, Ray))] = makeNPartitionsRays(sc, view._1, view._2, view._3, view._4, img, numPartitions, numRays)
-    val rayGeoms: RDD[(Int, ((Pixel, Ray), Geometry))] = dupedRays.join(groupedGeoms)
+    val rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))] = dupedRays.join(groupedGeoms)
     val rayoids: RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = intersectEye(rayGeoms)
     val fixBroken: RDD[(Pixel, (Ray, Option[IntersectData]))] = departitionAndFindShortest(rayoids)
     val idLights: RDD[((Int, Pixel), (IntersectData, PointLight))] = explodeLights(fixBroken, light)
@@ -131,8 +131,8 @@ object Renderer3 {
   }
 
   //TODO: we need to verify that we never pass around the entire geometry.
-  private def checkLightRaysForGeomIntersections(lightRays: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))], geom: RDD[(Int, Geometry)]): RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = {
-    val joined: RDD[(Int, (((Int, Pixel), Ray, RTColor, IntersectData), Geometry))] = lightRays.join(geom)
+  private def checkLightRaysForGeomIntersections(lightRays: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))], geom: RDD[(Int, KDTree[BoundingSphere])]): RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = {
+    val joined: RDD[(Int, (((Int, Pixel), Ray, RTColor, IntersectData), KDTree[BoundingSphere]))] = lightRays.join(geom)
     val withOIDs: RDD[(Int, ((Int, Pixel), (Ray, Option[IntersectData], RTColor, IntersectData)))] = joined.map(elem => {
       val (n, (((index, pix), ray, l, id), geom)) = elem
       (n, ((index, pix), (ray, (geom intersect ray), l, id)))
