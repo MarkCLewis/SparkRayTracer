@@ -85,7 +85,7 @@ object EricasTestingFile {
         // val view = GeometrySetup.standardView()
         //  def render(geom: RDD[GeomSphere], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays:Int = 1, numPartitions:Int = 8, minX:Double, maxX:Double): Unit = {
 
-        Renderer3.render(sc, geom, light, bimg, view, size, 1, 8)
+        Renderer3.render(sc, geom, light, bimg, view, size)
 
         val frame = new JFrame {
             override def paint(g: Graphics): Unit = {
