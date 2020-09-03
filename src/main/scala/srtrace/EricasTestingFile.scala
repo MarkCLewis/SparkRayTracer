@@ -14,13 +14,22 @@ object EricasTestingFile {
   def main(args: Array[String]) = {
     val conf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(conf)
-
     sc.setLogLevel("WARN")
 
-    val size = 1000
-    val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+    val size = 600
+    val minX = -10
+    val maxX = 10
+    val numPartitions = 8
+    val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
 
-    val partitions = 8
+   
+
+    val geom = createKDTrees(giveOffsets(divisionOfFiles(numPartitions, cartAndRadNumbers)))//.collect()//sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
+    val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
+    val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
+    val light: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
+    val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+    val view = GeometrySetup.standardView()
 
     val cartAndRadNumbers = Array[Int](5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010, 5011, 
      5012, 5013, 5014, 5015, 5016, 5017, 5018, 5019, 5020, 5021, 5022, 5023, 5024, 5025, 5026, 5027, 5028, 5029)//, 
@@ -41,19 +50,14 @@ object EricasTestingFile {
         }
         sc.parallelize(ret)
     }
-    println(divisionOfFiles(partitions, cartAndRadNumbers).collect().toList)
+    println(divisionOfFiles(numPartitions, cartAndRadNumbers).collect().toList)
 
 
     //Creates RDD[(Int,(Int, Double, Double))] with partition #, CartAndRad File #, offx, and offy
     def giveOffsets(r: RDD[(Int, Int)]) : RDD[(Int,(Int, Double, Double))] = {
         r.map( t => (t._1, (t._2, offsets(t._1)._1, offsets(t._1)._2)))
     }
-    println(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)).collect().toList)
-
-    //Uncomment for multiple simulations
-  //val particles = (0 until numSims).flatMap { i =>
-  //  (CartAndRad.read(new java.io.File(s"/home/mlewis/Rings/AMNS-Moonlets/Moonlet4c/CartAndRad.720$i.bin"))).map(p => GeomSphere(Point(p.x - firstXOffset + i * 2 * cellWidth, p.y, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
-  //}
+    println(giveOffsets(divisionOfFiles(numPartitions, cartAndRadNumbers)).collect().toList)
 
 
     //Map to RDD[(Int, KDTreeGeometry)]
@@ -61,11 +65,40 @@ object EricasTestingFile {
         r.mapValues(t => GeometrySetup.readRingWithOffset(t._1, t._2, t._3))
     }
 
-    println(createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers))).count())
+    println(createKDTrees(giveOffsets(divisionOfFiles(numPartitions, cartAndRadNumbers))).count())
 
-    var kd = createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)))
 
-    println(kd.map(_._2.boundingSphere).collect().toList)
+    // var kd = createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)))
+
+    // println(kd.map(_._2.boundingSphere).collect().toList)
+
+
+    
+        // val size = 600
+        // val minX = -10
+        // val maxX = 10
+        // val numPartitions = 8
+
+        // val geom = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
+        // val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
+        // val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
+        // val light: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
+        // val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+        // val view = GeometrySetup.standardView()
+        //  def render(geom: RDD[GeomSphere], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays:Int = 1, numPartitions:Int = 8, minX:Double, maxX:Double): Unit = {
+
+        Renderer3.render(sc, groupedGeoms, light, bimg, view, size, 1, 8)
+
+        val frame = new JFrame {
+            override def paint(g: Graphics): Unit = {
+                g.drawImage(bimg, 0, 0, null)
+            }
+        }
+        frame.setSize(size, size)
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
+        frame.setVisible(true)
+        
+    
 
 	sc.stop()
 
