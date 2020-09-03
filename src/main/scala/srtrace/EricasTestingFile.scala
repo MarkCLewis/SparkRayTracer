@@ -48,7 +48,7 @@ object EricasTestingFile {
     def giveOffsets(r: RDD[(Int, Int)]) : RDD[(Int,(Int, Double, Double))] = {
         r.map( t => (t._1, (t._2, offsets(t._1)._1, offsets(t._1)._2)))
     }
-    //println(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)).collect().toList)
+    println(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)).collect().toList)
 
     //Uncomment for multiple simulations
   //val particles = (0 until numSims).flatMap { i =>
@@ -61,11 +61,11 @@ object EricasTestingFile {
         r.mapValues(t => GeometrySetup.readRingWithOffset(t._1, t._2, t._3))
     }
 
-    //println(createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers))).count())
+    println(createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers))).count())
 
-    // var kd = createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)))
+    var kd = createKDTrees(giveOffsets(divisionOfFiles(8, cartAndRadNumbers)))
 
-    // println(kd.map(_._2.boundingSphere).collect().toList)
+    println(kd.map(_._2.boundingSphere).collect().toList)
 
 	sc.stop()
 
