@@ -36,5 +36,6 @@ object Main {
     frame.setSize(size, size)
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
     frame.setVisible(true)
+    sc.stop()
   }
 }

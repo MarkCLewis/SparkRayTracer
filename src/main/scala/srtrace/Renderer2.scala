@@ -9,18 +9,8 @@ import org.apache.spark.{SparkConf, SparkContext}
 import swiftvis2.raytrace._
 
 object Renderer2 {
-	def main(args: Array[String]) = {
-		val conf = new SparkConf().setAppName("Renderer2")//.setMaster("local[*]")//.setMaster("spark://pandora00:7077")
-		val sc = new SparkContext(conf)
-  
-		sc.setLogLevel("WARN")
-
-		val size = 1000
-//		val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,10) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
-		val geom = GeometrySetup.readParticles()
+	def render(sc:SparkContext, geom:Geometry, light:List[PointLight], bimg:BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int = 8):Unit = {
 		val broadcastGeom = sc.broadcast(geom)
-		val light:List[PointLight] = List(new PointLight(RTColor.Blue, Point(-2.0, 0.0, 2.0)))
-		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
 		for(i <- 0 until size; j <- 0 until size) bimg.setRGB(i, j, 0xFF000000)
 		val img = new RTImage {
 			def width = bimg.getWidth()
@@ -29,9 +19,7 @@ object Renderer2 {
 				bimg.setRGB(x, y, color.toARGB)
 			}
 		}
-		val numRays = 2
-		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
-		val (eye, topLeft, right, down) = GeometrySetup.ringView1(3.0e-5)
+		val (eye, topLeft, right, down) = view
 		val start = System.nanoTime()
 		val rays:RDD[((Int, Int), Ray)] = makeRays(sc, eye, topLeft, right, down, img, numRays)
 		val rays2:RDD[((Int, Int), (Ray, Option[IntersectData]))] = intersectEye(rays, broadcastGeom)
@@ -39,18 +27,49 @@ object Renderer2 {
 		val rays4:RDD[((Int, Int), RTColor)] = calcLightColors(rays3, broadcastGeom)
 		combineAndSetColors(rays4, img, numRays)
 		println(s"Seconds taken: ${(System.nanoTime()-start)/1e9}")
+	}
+//	def main(args: Array[String]) = {
+//		val conf = new SparkConf().setAppName("Renderer2")//.setMaster("local[*]")//.setMaster("spark://pandora00:7077")
+//		val sc = new SparkContext(conf)
+  
+//		sc.setLogLevel("WARN")
+
+//		val size = 1000
+//		val geom = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,10) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
+//		val geom: Geometry = GeometrySetup.readParticles()
+//		val broadcastGeom = sc.broadcast(geom)
+//		val light:List[PointLight] = List(new PointLight(RTColor.Blue, Point(-2.0, 0.0, 2.0)))
+//		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+//		for(i <- 0 until size; j <- 0 until size) bimg.setRGB(i, j, 0xFF000000)
+//		val img = new RTImage {
+//			def width = bimg.getWidth()
+//			def height = bimg.getHeight()
+//			def setColor(x: Int, y: Int, color: RTColor): Unit = {
+//				bimg.setRGB(x, y, color.toARGB)
+//			}
+//		}
+//		val numRays = 2
+		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
+//		val (eye, topLeft, right, down) = GeometrySetup.ringView1(3.0e-5)
+//		val start = System.nanoTime()
+//		val rays:RDD[((Int, Int), Ray)] = makeRays(sc, eye, topLeft, right, down, img, numRays)
+//		val rays2:RDD[((Int, Int), (Ray, Option[IntersectData]))] = intersectEye(rays, broadcastGeom)
+//		val rays3:RDD[((Int, Int), (IntersectData, PointLight))] = explodeLights(rays2, light)
+//		val rays4:RDD[((Int, Int), RTColor)] = calcLightColors(rays3, broadcastGeom)
+//		combineAndSetColors(rays4, img, numRays)
+//		println(s"Seconds taken: ${(System.nanoTime()-start)/1e9}")
 		
 
-		val frame = new JFrame {
-			override def paint(g: Graphics): Unit = {
-				g.drawImage(bimg, 0, 0, null)
-			}
-		} 
-		frame.setSize(size, size)
-		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
-		frame.setVisible(true)
-		sc.stop()
-	}
+//		val frame = new JFrame {
+//			override def paint(g: Graphics): Unit = {
+//				g.drawImage(bimg, 0, 0, null)
+//			}
+//		}
+//		frame.setSize(size, size)
+//		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
+//		frame.setVisible(true)
+//		sc.stop()
+//	}
 
 	
 
