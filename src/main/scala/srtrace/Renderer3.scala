@@ -11,7 +11,7 @@ import swiftvis2.raytrace._
 object Renderer3 {
 
   case class Pixel(x:Int, y:Int)
-  def render(sc: SparkContext, groupedGeoms: RDD[(Int, Geometry)], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int = 8): Unit = {
+  def render(sc: SparkContext, groupedGeoms: RDD[(Int, KDTreeGeometry)], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int = 8): Unit = {
 
     val img = new RTImage {
       def width = bImg.getWidth()
