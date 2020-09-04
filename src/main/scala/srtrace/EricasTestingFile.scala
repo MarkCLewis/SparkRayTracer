@@ -15,7 +15,7 @@ object EricasTestingFile {
   def divisionOfFiles(sc: SparkContext, partitionNum: Int, cartAndRadNumbersArray: Array[Int]): RDD[(Int, Int)] = {
       val ret = Array.fill(cartAndRadNumbersArray.length)((0,0))
       for (i <- cartAndRadNumbersArray.indices) yield {
-          ret(i) = (i % partitionNum-1, cartAndRadNumbersArray(i))
+          ret(i) = (i % partitionNum, cartAndRadNumbersArray(i))
       }
       sc.parallelize(ret)
   }
