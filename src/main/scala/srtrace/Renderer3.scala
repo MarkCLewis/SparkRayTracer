@@ -52,7 +52,7 @@ object Renderer3 {
     sc.parallelize(rays)
   }
   
-  private def intersectEye(rayGeoms: RDD[(Int, ((Pixel, Ray), Geometry))]): RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = {
+  private def intersectEye(rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))]): RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = {
     rayGeoms.map(indiv => {
       val (n, ((pix, ray), geom)) = indiv
       (n, (pix, (ray, (geom) intersect ray)))
@@ -131,8 +131,8 @@ object Renderer3 {
   }
 
   //TODO: we need to verify that we never pass around the entire geometry.
-  private def checkLightRaysForGeomIntersections(lightRays: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))], geom: RDD[(Int, KDTree[BoundingSphere])]): RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = {
-    val joined: RDD[(Int, (((Int, Pixel), Ray, RTColor, IntersectData), KDTree[BoundingSphere]))] = lightRays.join(geom)
+  private def checkLightRaysForGeomIntersections(lightRays: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))], geom: RDD[(Int, KDTreeGeometry[BoundingSphere])]): RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = {
+    val joined: RDD[(Int, (((Int, Pixel), Ray, RTColor, IntersectData), KDTreeGeometry[BoundingSphere]))] = lightRays.join(geom)
     val withOIDs: RDD[(Int, ((Int, Pixel), (Ray, Option[IntersectData], RTColor, IntersectData)))] = joined.map(elem => {
       val (n, (((index, pix), ray, l, id), geom)) = elem
       (n, ((index, pix), (ray, (geom intersect ray), l, id)))
