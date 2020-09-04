@@ -33,10 +33,10 @@ object EricasTestingFile {
     val sc = new SparkContext(conf)
     sc.setLogLevel("WARN")
 
-    val size = 600
-    val minX = -10
-    val maxX = 10
-    val numPartitions = 8
+    val size = 1000
+    val minX = -15
+    val maxX = 15
+    val numPartitions = 10
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     val light: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
     val view = GeometrySetup.standardView()
