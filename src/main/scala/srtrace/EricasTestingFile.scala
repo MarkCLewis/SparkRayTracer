@@ -34,8 +34,8 @@ object EricasTestingFile {
     sc.setLogLevel("WARN")
 
     val size = 1000
-    val minX = -15
-    val maxX = 15
+    val minX = -150
+    val maxX = 150
     val numPartitions = 10
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     val light: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
