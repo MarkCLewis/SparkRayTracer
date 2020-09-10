@@ -34,7 +34,7 @@ object EricasTestingFile {
     sc.setLogLevel("WARN")
 
 
-    val cartAndRadNumbers = Array[Int](5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010, 5011)//, 
+    val cartAndRadNumbers = Array[Int](5000, 5001)//, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010, 5011)//, 
      //5012, 5013, 5014, 5015, 5016, 5017, 5018, 5019, 5020, 5021, 5022, 5023, 5024, 5025, 5026, 5027, 5028, 5029)//, 
      //6000, 6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009, 6010, 6011, 6012, 6013, 6014, 6015, 6016, 6017,
      //6018, 6019, 6020, 6021, 6022, 6023, 6024, 6025,6026, 6027, 6028, 6029)
@@ -46,7 +46,7 @@ object EricasTestingFile {
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     val light: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
     val view = GeometrySetup.testView()//.standardView()
-    val offsets = Array[Int](0,1,2,3,4,5,6,7,8,9,10,11).map(i => (i*2.0e-5,0.0))//,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29).map(i => (i*2.0e-5,0.0))
+    val offsets = Array[Int](0,1).map(i => (i*2.0e-5,0.0))//,2,3,4,5,6,7,8,9,10,11).map(i => (i*2.0e-5,0.0))//,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29).map(i => (i*2.0e-5,0.0))
 
     
 
