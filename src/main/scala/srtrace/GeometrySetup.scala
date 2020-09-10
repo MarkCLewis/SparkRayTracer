@@ -85,7 +85,7 @@ object GeometrySetup {
 		//eye, topLeft, right, down
 	}
 	def testView(): (Point, Point, Vect, Vect) = {
-		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 4.0, 0.0))
+		(Point(0.0, 2.0, 4.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
 	}
 
 
