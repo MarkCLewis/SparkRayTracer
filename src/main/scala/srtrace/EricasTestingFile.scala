@@ -53,12 +53,13 @@ object EricasTestingFile {
     //val offsets = Array[(Double, Double)]((0,0), (2.0e-5, 0), (-2.0e-5, 0), (2*2.0e-5, 0), (-2*2.0e-5, 0), (3*2.0e-5, 0), (-3*2.0e-5, 0), (4*2.0e-5, 0), (-4*2.0e-5, 0), (5*2.0e-5, 0))
         // (0, 2.0e-5), (0, -2.0e-5), (0, 2*2.0e-5), (0, -2*2.0e-5)), 
 
-    val geom = createKDTrees(sc, giveOffsets(sc, divisionOfFiles(sc, numPartitions, cartAndRadNumbers), offsets))//.collect()//sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
+    val geom = createKDTrees(sc, giveOffsets(sc, divisionOfFiles(sc, numPartitions, cartAndRadNumbers), offsets)).cache()//.collect()//sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
     // val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
     // val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
 
 
-
+    println(geom.count)
+    val start = System.nanoTime()
 
 
     // println(divisionOfFiles(sc, numPartitions, cartAndRadNumbers).collect().toList)
@@ -93,6 +94,8 @@ object EricasTestingFile {
         //  def render(geom: RDD[GeomSphere], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays:Int = 1, numPartitions:Int = 8, minX:Double, maxX:Double): Unit = {
 
         Renderer3.render(sc, geom, light, bimg, view, size, 1, numPartitions)
+
+        println((System.nanoTime()-start)*1e-9 + " seconds")
 
         val frame = new JFrame {
             override def paint(g: Graphics): Unit = {

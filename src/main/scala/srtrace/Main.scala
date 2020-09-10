@@ -21,7 +21,7 @@ object Main {
     val geom = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
     val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
     val groupedGeoms: RDD[(Int, KDTreeGeometry[BoundingSphere])] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
-    val light: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
+    val light: List[PointLight] = List(new PointLight(RTColor.Blue, Point(-2.0, 0.0, 2.0)), new PointLight(RTColor.Red, Point(12.0, 0.0, 2.0)), new PointLight(RTColor(1.0, 1.0, 0.0, 1.0), Point(12.0, 9.0, 2.0)))
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     val view = GeometrySetup.standardView()
     //  def render(geom: RDD[GeomSphere], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays:Int = 1, numPartitions:Int = 8, minX:Double, maxX:Double): Unit = {
