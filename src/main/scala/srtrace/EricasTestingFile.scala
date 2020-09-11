@@ -45,7 +45,7 @@ object EricasTestingFile {
     val numPartitions = cartAndRadNumbers.length
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     val light: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
-    val view = GeometrySetup.positiveYView()//.topView()//.standardView()
+    val view = GeometrySetup.topView()//.topView()//.standardView()
     val offsets = Array[Int](0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29).map(i => (i*2.0e-5,0.0))
 
     
