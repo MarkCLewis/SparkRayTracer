@@ -29,7 +29,7 @@ object EricasTestingFile {
   }
 
   def main(args: Array[String]) = {
-    val conf = new SparkConf().setAppName("ETF").setMaster("local[*]")
+    val conf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(conf)
     sc.setLogLevel("WARN")
 
