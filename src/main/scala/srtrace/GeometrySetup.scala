@@ -84,10 +84,18 @@ object GeometrySetup {
 		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
 		//eye, topLeft, right, down
 	}
-	def testView(): (Point, Point, Vect, Vect) = {
-		(Point(0.0, -1.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
+	def topView(): (Point, Point, Vect, Vect) = {
+		(Point(0.0, 0.0, 32*1e-5), Point(-1e-5, 1e-5, 0.0), Vect(2 * 1e-5, 0, 0), Vect(0, -2 * 1e-5, 0))
 	}
 
+	def positiveYView(): (Point, Point, Vect, Vect) = {
+		val cellWidth = 1e-5
+  		val distanceUp = 1e-5
+  		val viewSize = 1e-5
+  		val numSims = 6
+  		val firstXOffset = cellWidth * (numSims - 1)
+		(Point(0, -firstXOffset-2*cellWidth, distanceUp), Point(-viewSize, -firstXOffset-2*cellWidth+viewSize, distanceUp + viewSize), Vect(2 * viewSize, 0, 0), Vect(0, 0, -2 * viewSize))
+	}
 
 
 	def makeTwoSpheresIntersecting():Array[GeomSphere] = {
