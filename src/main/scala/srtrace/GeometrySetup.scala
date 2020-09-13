@@ -73,10 +73,13 @@ object GeometrySetup {
 		new KDTreeGeometry(particleSpheres)
 	}
 
-	def readRingWithOffset(step: Int, xoff: Double, yoff: Double): KDTreeGeometry[BoundingSphere] = {
+	def readRingWithOffsetSpheres(step: Int, xoff: Double, yoff: Double): Seq[Geometry] = {
 		val carURL = new URL("http://www.cs.trinity.edu/~mlewis/Rings/AMNS-Moonlets/Moonlet4/CartAndRad." + step.toString + ".bin")
-		val particles = CartAndRad.readStream(carURL.openStream).map(p => GeomSphere(Point(p.x + xoff, p.y + yoff, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
-		val particleSpheres = particles.map(p => new GeomSphere(p.center, p.radius, _ => RTColor.Red, _ => 0))
+		CartAndRad.readStream(carURL.openStream).map(p => GeomSphere(Point(p.x + xoff, p.y + yoff, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
+	}
+
+	def readRingWithOffset(step: Int, xoff: Double, yoff: Double): KDTreeGeometry[BoundingSphere] = {
+		val particleSpheres = readRingWithOffsetSpheres(step, xoff, yoff)
 		new KDTreeGeometry[BoundingSphere](particleSpheres)
 	}
 
@@ -84,8 +87,8 @@ object GeometrySetup {
 		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
 		//eye, topLeft, right, down
 	}
-	def topView(): (Point, Point, Vect, Vect) = {
-		(Point(0.0, 0.0, 32*1e-5), Point(-1e-5, 1e-5, 0.0), Vect(2 * 1e-5, 0, 0), Vect(0, -2 * 1e-5, 0))
+	def topView(distMult: Int): (Point, Point, Vect, Vect) = {
+		(Point(0.0, 0.0, distMult*1e-5), Point(-1e-5, 1e-5, (distMult-1)*1e-5), Vect(2 * 1e-5, 0, 0), Vect(0, -2 * 1e-5, 0))
 	}
 
 	def positiveYView(): (Point, Point, Vect, Vect) = {
