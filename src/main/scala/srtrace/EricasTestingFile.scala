@@ -34,14 +34,18 @@ object EricasTestingFile {
      6018, 6019, 6020, 6021, 6022, 6023, 6024, 6025,6026, 6027, 6028, 6029)
 
   def main(args: Array[String]) = {
-    val conf = new SparkConf().setAppName("ETF").setMaster("local[*]")
+		if (args.length < 1) {
+			println("You need to specify an argument for how many simulations/partitions.")
+			sys.exit(0)
+		}
+    val conf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(conf)
     sc.setLogLevel("WARN")
 
     val size = 1000
     val minX = -150
     val maxX = 150
-    val numPartitions = 20
+    val numPartitions = args(0).toInt
     val usedCartAndRadNumbers = cartAndRadNumbers.take(numPartitions)
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     //val lights: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))

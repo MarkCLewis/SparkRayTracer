@@ -8,7 +8,7 @@ import java.awt.Graphics
 
 object StandardRenderer {
   def main(args: Array[String]): Unit = {
-    val numSims = 20
+    val numSims = 21
     val view = GeometrySetup.topView(numSims)
     val size = 1000
     val bImg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
