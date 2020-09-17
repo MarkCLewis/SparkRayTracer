@@ -17,7 +17,7 @@ object EricasTestingFile {
       for (i <- cartAndRadNumbersArray.indices) yield {
           ret(i) = (i % partitionNum, cartAndRadNumbersArray(i))
       }
-      sc.parallelize(ret)
+      sc.parallelize(ret).repartition(partitionNum)
   }
 
   def giveOffsets(sc: SparkContext, r: RDD[(Int, Int)], offsetArray: IndexedSeq[(Double, Double)]) : RDD[(Int,(Int, Double, Double))] = {
@@ -65,7 +65,7 @@ object EricasTestingFile {
     // val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
     // val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
 
-
+    println(s"Num partitions = ${geom.getNumPartitions}")
     println(geom.count)
     val start = System.nanoTime()
 
