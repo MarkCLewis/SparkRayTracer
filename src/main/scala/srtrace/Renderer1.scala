@@ -65,25 +65,25 @@ object Renderer1 {
 	
 
 	def makeRays(sc: SparkContext, eye: Point, topLeft: Point, right: Vect, down: Vect, img: RTImage, numRays: Int): 
-		RDD[((Int, Int), Ray)] = {
+		RDD[(Pixel, Ray)] = {
 		//make rays in a scala collection
 		val aspect = img.width.toDouble/img.height
 		val rays = for (i <- 0 until img.width; j <- 0 until img.height; index <- 0 until numRays) yield {
-			((i, j), Ray(eye, topLeft + right * (aspect * (i + (if (index > 0) math.random * 0.75 else 0)) / img.width) 
+			(Pixel(i, j), Ray(eye, topLeft + right * (aspect * (i + (if (index > 0) math.random * 0.75 else 0)) / img.width) 
 				+ down * (j + (if (index > 0) math.random * 0.75 else 0)) / img.height))
 		}
 		sc.parallelize(rays)
 	}
 
-	def transform(rays: RDD[((Int, Int), Ray)], geom: Geometry, lights: List[Light]):  RDD[((Int, Int), RTColor)] = {
+	def transform(rays: RDD[(Pixel, Ray)], geom: Geometry, lights: List[Light]):  RDD[(Pixel, RTColor)] = {
 		rays.mapValues(ray => RayTrace.castRay(ray, geom, lights, 0))
 	}
 	
 
 	// Not in parallel
-	def combineAndSetColors(colors: RDD[((Int, Int), RTColor)], img: RTImage, numRays: Int): Unit = {
+	def combineAndSetColors(colors: RDD[(Pixel, RTColor)], img: RTImage, numRays: Int): Unit = {
 		val combinedColors = colors.reduceByKey( _ + _ ).mapValues(_/numRays).collect
-		for( ((x,y) ,c) <- combinedColors) {
+		for( (Pixel(x,y) ,c) <- combinedColors) {
 			img.setColor(x,y,c)
 		}
 	}
