@@ -7,10 +7,10 @@ import org.apache.spark.rdd.RDD
 import swiftvis2.raytrace._
 
 // TODO: Put in some meaningful case classes so we don't have tuples everywhere.
+case class Pixel(x:Int, y:Int)
 
 object Renderer3 {
 
-  case class Pixel(x:Int, y:Int)
   def render(sc: SparkContext, groupedGeoms: RDD[(Int, KDTreeGeometry[BoundingSphere])], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int): Unit = {
 
     val img = new RTImage {
