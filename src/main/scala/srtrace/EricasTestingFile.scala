@@ -65,12 +65,9 @@ object EricasTestingFile {
     // val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
     // val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
 
-<<<<<<< HEAD
     println(s"Num partitions = ${geom.getNumPartitions}")
-=======
     val geomNoRDD = if (args(0) == "1" || args(0) == "2") new ListScene(geom.collect.map(_._2):_*) else null
 
->>>>>>> 776584c061d494a44338bbb0206bb0c1d6dd6d60
     println(geom.count)
     val start = System.nanoTime()
 
