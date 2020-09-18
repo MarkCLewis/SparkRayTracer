@@ -4,7 +4,7 @@ version := "1.0"
 
 scalaVersion := "2.12.10"
 
-javaOptions += "-Xmx24G"
+javaOptions += "-Xmx12G"
 
 fork := true
 
