@@ -104,21 +104,22 @@ object Renderer2 {
 			}
 	}
 	def calcLightColors(idColors: RDD[(Pixel, (IntersectData, PointLight))], bGeom:Broadcast[Geometry]): RDD[(Pixel, RTColor)] = {
-		val groupedByLocation:RDD[(Pixel, Iterable[(IntersectData, PointLight)])] = idColors.groupByKey()
-		val mapped:RDD[(Pixel, RTColor)] = groupedByLocation.mapValues(findLightRayValues(_, bGeom))
-		mapped
-	}
-	def findLightRayValues(lightids: Iterable[(IntersectData, PointLight)], bGeom:Broadcast[Geometry]): RTColor = {
-		var startColor = RTColor(0, 0, 0, 1)
-		for((id:IntersectData, light:PointLight) <- lightids) {
-			val outRay = Ray(id.point + id.norm * 0.0001 * id.geom.boundingSphere.radius, light.point)
-			val oid = bGeom.value.intersect(outRay)
-			oid match {
-				case None => startColor = startColor + light.color(id, bGeom.value)
-				case Some(lid) => startColor = startColor + RTColor(0, 0, 0, 1)
-			}
-		}
-		startColor
+		idColors.aggregateByKey(RTColor(0, 0, 0, 1))({ case (agg, (idata, light)) => agg + light.color(idata, bGeom.value)}, _ + _)
+	// 	val groupedByLocation:RDD[(Pixel, Iterable[(IntersectData, PointLight)])] = idColors.groupByKey()
+	// 	val mapped:RDD[(Pixel, RTColor)] = groupedByLocation.mapValues(findLightRayValues(_, bGeom))
+	// 	mapped
+	// }
+	// def findLightRayValues(lightids: Iterable[(IntersectData, PointLight)], bGeom:Broadcast[Geometry]): RTColor = {
+	// 	var startColor = RTColor(0, 0, 0, 1)
+	// 	for((id:IntersectData, light:PointLight) <- lightids) {
+	// 		val outRay = Ray(id.point + id.norm * 0.0001 * id.geom.boundingSphere.radius, light.point)
+	// 		val oid = bGeom.value.intersect(outRay)
+	// 		oid match {
+	// 			case None => startColor = startColor + light.color(id, bGeom.value)
+	// 			case Some(lid) => startColor = startColor + RTColor(0, 0, 0, 1)
+	// 		}
+	// 	}
+	// 	startColor
 	}
 
 
