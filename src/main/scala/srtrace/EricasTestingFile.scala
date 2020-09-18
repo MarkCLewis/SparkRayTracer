@@ -17,7 +17,7 @@ object EricasTestingFile {
       for (i <- cartAndRadNumbersArray.indices) yield {
           ret(i) = (i % partitionNum, cartAndRadNumbersArray(i))
       }
-      sc.parallelize(ret)
+      sc.parallelize(ret).repartition(partitionNum)
   }
 
   def giveOffsets(sc: SparkContext, r: RDD[(Int, Int)], offsetArray: IndexedSeq[(Double, Double)]) : RDD[(Int,(Int, Double, Double))] = {
@@ -34,8 +34,8 @@ object EricasTestingFile {
      6018, 6019, 6020, 6021, 6022, 6023, 6024, 6025,6026, 6027, 6028, 6029)
 
   def main(args: Array[String]) = {
-		if (args.length < 1) {
-			println("You need to specify an argument for how many simulations/partitions.")
+		if (args.length < 2) {
+			println("You need to specify a renderer # and how many simulations/partitions.")
 			sys.exit(0)
 		}
     val conf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
@@ -45,7 +45,7 @@ object EricasTestingFile {
     val size = 1000
     val minX = -150
     val maxX = 150
-    val numPartitions = args(0).toInt
+    val numPartitions = args(1).toInt
     val usedCartAndRadNumbers = cartAndRadNumbers.take(numPartitions)
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     //val lights: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
@@ -65,6 +65,8 @@ object EricasTestingFile {
     // val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
     // val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
 
+    println(s"Num partitions = ${geom.getNumPartitions}")
+    val geomNoRDD = if (args(0) == "1" || args(0) == "2") new ListScene(geom.collect.map(_._2):_*) else null
 
     println(geom.count)
     val start = System.nanoTime()
@@ -101,7 +103,14 @@ object EricasTestingFile {
         // val view = GeometrySetup.standardView()
         //  def render(geom: RDD[GeomSphere], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays:Int = 1, numPartitions:Int = 8, minX:Double, maxX:Double): Unit = {
 
-        Renderer3.render(sc, geom, lights, bimg, view, size, 1, numPartitions)
+    args(0) match {
+        case "1" => 
+            Renderer1.render(sc, geomNoRDD, lights, bimg, view, size, 1, numPartitions)
+        case "2" =>
+            Renderer2.render(sc, geomNoRDD, lights, bimg, view, size, 1, numPartitions)
+        case _ =>
+            Renderer3.render(sc, geom, lights, bimg, view, size, 1, numPartitions)
+    }
 
         println((System.nanoTime()-start)*1e-9 + " seconds")
 

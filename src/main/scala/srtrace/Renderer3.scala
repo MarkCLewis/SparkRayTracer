@@ -25,13 +25,21 @@ object Renderer3 {
     for (i <- 0 until size; j <- 0 until size) bImg.setRGB(i, j, 0xFF000000)
 
     val dupedRays: RDD[(Int, (Pixel, Ray))] = makeNPartitionsRays(sc, view._1, view._2, view._3, view._4, img, numPartitions, numRays)
+    println(s"duped ${dupedRays.getNumPartitions}")
     val rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))] = dupedRays.join(groupedGeoms)
+    println(s"rayGeoms ${rayGeoms.getNumPartitions}")
     val rayoids: RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = intersectEye(rayGeoms)
+    println(s"rayoids ${rayoids.getNumPartitions}")
     val fixBroken: RDD[(Pixel, (Ray, Option[IntersectData]))] = departitionAndFindShortest(rayoids)
+    println(s"fixBroken ${fixBroken.getNumPartitions}")
     val idLights: RDD[((Int, Pixel), (IntersectData, PointLight))] = explodeLights(fixBroken, light)
+    println(s"idLights ${idLights.getNumPartitions}")
     val lightColors: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))] = makeRaysToLights(idLights, numPartitions)
+    println(s"lightColors ${lightColors.getNumPartitions}")
     val idRDD: RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = checkLightRaysForGeomIntersections(lightColors, groupedGeoms)
+    println(s"idRDD ${idRDD.getNumPartitions}")
     val colors: RDD[(Pixel, RTColor)] = generateColors(idRDD)
+    println(s"colors ${colors.getNumPartitions}")
 
 
     combineAndSetColors(colors, img, numRays)
@@ -49,7 +57,7 @@ object Renderer3 {
         i -> x
       }
     })
-    sc.parallelize(rays)
+    sc.parallelize(rays).repartition(numPartitions)
   }
   
   private def intersectEye(rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))]): RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = {
@@ -117,7 +125,7 @@ object Renderer3 {
       for (i <- 0 until numPartitions) yield {
         (i, x)
       }
-    })
+    }).repartition(numPartitions)
     val lightRays: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))] = repart.map(elem => {
       val (n, pixIDLights) = elem
       val ((index, pix), (id, pl)) = pixIDLights
