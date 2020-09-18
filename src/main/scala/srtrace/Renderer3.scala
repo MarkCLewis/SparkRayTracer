@@ -30,9 +30,9 @@ object Renderer3 {
     println(s"rayGeoms ${rayGeoms.getNumPartitions}")
     val rayoids: RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = intersectEye(rayGeoms)
     println(s"rayoids ${rayoids.getNumPartitions}")
-    val fixBroken: RDD[(Pixel, (Ray, Option[IntersectData]))] = departitionAndFindShortest(rayoids)
-    println(s"fixBroken ${fixBroken.getNumPartitions}")
-    val idLights: RDD[((Int, Pixel), (IntersectData, PointLight))] = explodeLights(fixBroken, light)
+    val realIntersects: RDD[(Pixel, (Ray, Option[IntersectData]))] = departitionAndFindShortest(rayoids)
+    println(s"realIntersects ${realIntersects.getNumPartitions}")
+    val idLights: RDD[((Int, Pixel), (IntersectData, PointLight))] = explodeLights(realIntersects, light)
     println(s"idLights ${idLights.getNumPartitions}")
     val lightColors: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))] = makeRaysToLights(idLights, numPartitions)
     println(s"lightColors ${lightColors.getNumPartitions}")
@@ -67,37 +67,18 @@ object Renderer3 {
     })
   }
 
-  private def findShortest(iterable: Iterable[(Ray, Option[IntersectData])]): (Ray, Option[IntersectData]) = {
-    val iter = iterable.iterator
-    var currentMinID: Option[IntersectData] = None
-    var currentRay: Option[Ray] = None
-    while (iter.hasNext) {
-      val (ray, oid): (Ray, Option[IntersectData]) = iter.next
-      if (currentRay.isEmpty || currentMinID.isEmpty) {
-        currentRay = Some(ray)
-        currentMinID = oid
-      } else {
-        if (oid.isDefined) {
-          if (currentMinID.get.time > oid.get.time) {
-            currentRay = Some(ray)
-            currentMinID = oid
-          }
-        }
-      }
-
-    }
-    (currentRay.get, currentMinID)
-  }
-
   // Collapse to one intersect per pixel. (Minimum by id.time.)
   // Explode needs to re-distribute. Explode in lights and then in geometry partitions.
-  private def departitionAndFindShortest(bug: RDD[(Int, (Pixel, (Ray, Option[IntersectData])))]): RDD[(Pixel, (Ray, Option[IntersectData]))] = {
-    val noPartitions = bug.values
-    val groupedByPixel: RDD[(Pixel, Iterable[(Ray, Option[IntersectData])])] = noPartitions.groupByKey()
-    val shortestIDs: RDD[(Pixel, (Ray, Option[IntersectData]))] = groupedByPixel.mapValues(x => {
-      findShortest(x)
+  private def departitionAndFindShortest(intersects: RDD[(Int, (Pixel, (Ray, Option[IntersectData])))]): RDD[(Pixel, (Ray, Option[IntersectData]))] = {
+    val noPartitions = intersects.values
+    val zeroRay = Ray(Point(0, 0, 0), Vect(0, 0, 0))
+    noPartitions.aggregateByKey((zeroRay, None: Option[IntersectData]))({ case ((ray, minID), (cRay, cID)) =>
+      if (minID.isEmpty || cID.nonEmpty && cID.get.time > minID.get.time) (cRay, cID) else (ray, minID)
+    }, { 
+      case ((r1, oid1), (r2, None)) => (r1, oid1)
+      case ((r1, None), (r2, oid2)) => (r2, oid2)
+      case ((r1, Some(id1)), (r2, Some(id2))) => if (id1.time < id2.time) (r1, Some(id1)) else (r2, Some(id2))
     })
-    shortestIDs
   }
 
   private def explodeLights(rayids: RDD[(Pixel, (Ray, Option[IntersectData]))], lights: List[PointLight]): RDD[((Int, Pixel), (IntersectData, PointLight))] = {
@@ -138,7 +119,6 @@ object Renderer3 {
     lightRays
   }
 
-  //TODO: we need to verify that we never pass around the entire geometry.
   private def checkLightRaysForGeomIntersections(lightRays: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))], geom: RDD[(Int, KDTreeGeometry[BoundingSphere])]): RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = {
     val joined: RDD[(Int, (((Int, Pixel), Ray, RTColor, IntersectData), KDTreeGeometry[BoundingSphere]))] = lightRays.join(geom)
     val withOIDs: RDD[(Int, ((Int, Pixel), (Ray, Option[IntersectData], RTColor, IntersectData)))] = joined.map(elem => {
@@ -158,37 +138,18 @@ object Renderer3 {
     }).map { case ((index, pix), (ray, oid, col, id)) => (pix, (ray, oid, col, id)) }
   }
 
-
-  private def generateColors(bug: RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))]): RDD[(Pixel, RTColor)] = {
-    val groupedByPixel: RDD[(Pixel, Iterable[(Ray, Option[IntersectData], RTColor, IntersectData)])] = bug.groupByKey()
-    groupedByPixel.map(elem => {
-      val (pix, iter: Iterable[(Ray, Option[IntersectData], RTColor, IntersectData)]) = elem
-      val color = iter.map(i => {
-        val (r, oid: Option[IntersectData], rtCol, id) = i
-        val outRay: Ray = r
-        oid match {
-          case None => {
-            val intensity = (outRay.dir.normalize dot id.norm).toFloat
-            if (intensity < 0) new RTColor(0, 0, 0, 1) else rtCol * intensity;
-          }
-          case Some(nid) => {
-            if (nid.time < 0 || nid.time > 1) {
-              val intensity = (outRay.dir.normalize dot id.norm).toFloat
-              if (intensity < 0) new RTColor(0, 0, 0, 1) else rtCol * intensity;
-            } else {
-              new RTColor(0, 0, 0, 1)
-            }
-          }
-        }
-      }).reduceLeft(_ + _)
-      /*
-      val (n, (r, oid, rtColor)) = x
-      (n, rtColor)
-      */
-      (pix, color)
-    })
+  private def generateColors(lightIntersects: RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))]): RDD[(Pixel, RTColor)] = {
+    lightIntersects.aggregateByKey(RTColor.Black)({ case (color, (r, oid, rtCol, id)) =>
+      color + oid.map { nid => if (nid.time < 0 || nid.time > 1) {
+              val intensity = (r.dir.normalize dot id.norm).toFloat
+              if (intensity < 0) RTColor.Black else rtCol * intensity
+            } else RTColor.Black
+      }.getOrElse{
+        val intensity = (r.dir.normalize dot id.norm).toFloat
+        if (intensity < 0) RTColor.Black else rtCol * intensity
+      }
+    }, _ + _)
   }
-
 
   private def combineAndSetColors(colors: RDD[(Pixel, RTColor)], img: RTImage, numRays: Int): Unit = {
     val combinedColors = colors.reduceByKey(_ + _).mapValues(rt => (rt / numRays).copy(a = 1.0)).collect
