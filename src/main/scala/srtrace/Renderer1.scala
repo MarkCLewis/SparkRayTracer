@@ -21,48 +21,6 @@ object Renderer1 {
 		val colors = transform(rays, broadcastVar.value, light)
 		combineAndSetColors(colors, img, numRays)
 	}
-//	def main(args: Array[String]) = {
-//		val conf = new SparkConf().setAppName("Renderer1").setMaster("local[*]")
-//		val sc = new SparkContext(conf)
-//
-//		sc.setLogLevel("WARN")
-//
-//		val size = 1000
-//		val numOfSpheres = 500//3900 works
-//		val geom: Geometry = GeometrySetup.randomGeometryArr(new scala.util.Random(System.currentTimeMillis), 10,-10,20,10,10,-10,2,numOfSpheres) //new GeomSphere(Point(1.0, 5.0, 0.0), 1.0, p => RTColor(0xFFFFFF00), p => 0.0)
-		//val geom2 = GeometrySetup.readParticles()
-
-//		val broadcastVar = sc.broadcast(geom)
-//		val light = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
-//		val bimg = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
-//		val img = new RTImage {
-//			def width = bimg.getWidth()
-//			def height = bimg.getHeight()
-//			def setColor(x: Int, y: Int, color: RTColor): Unit = {
-//				bimg.setRGB(x, y, color.toARGB)
-//			}
-//		}
-//		val numRays = 2
-		//val randGeoms = randomGeometryArr(new util.Random(System.currentTimeMillis), 100,0,100,0,100,0,5,100)
-		//val (eye, topLeft, right, down) = GeometrySetup.standardView()
-//		val rays = makeRays(sc, eye, topLeft, right, down, img, numRays)
-//		val colors = transform(rays, broadcastVar.value, light)
-//		combineAndSetColors(colors, img, numRays)
-
-		
-
-//		val frame = new JFrame {
-//			override def paint(g: Graphics): Unit = {
-//				g.drawImage(bimg, 0, 0, null)
-//			}
-//		}
-//		frame.setSize(size, size)
-//		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
-//		frame.setVisible(true)
-//		sc.stop()
-//	}
-
-	
 
 	def makeRays(sc: SparkContext, eye: Point, topLeft: Point, right: Vect, down: Vect, img: RTImage, numRays: Int): 
 		RDD[(Pixel, Ray)] = {
