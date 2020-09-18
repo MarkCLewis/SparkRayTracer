@@ -27,7 +27,7 @@ object Main {
     val view = GeometrySetup.standardView()
     //  def render(geom: RDD[GeomSphere], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays:Int = 1, numPartitions:Int = 8, minX:Double, maxX:Double): Unit = {
 
-    Renderer3.render(sc, groupedGeoms, light, bimg, view, size, 1, 8)
+    Renderer2.render(sc, new ListScene(groupedGeoms.collect.map(_._2):_*), light, bimg, view, size, 1, 8)
 
     val frame = new JFrame {
       override def paint(g: Graphics): Unit = {
