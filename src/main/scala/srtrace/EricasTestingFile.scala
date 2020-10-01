@@ -69,7 +69,7 @@ object EricasTestingFile {
     val geomNoRDD = if (args(0) == "1" || args(0) == "2") new ListScene(geom.collect.map(_._2):_*) else null
 
     println(geom.count)
-    println("Partitioning distribution: "+ str(sc.glom().map(len).collect()))
+    //println("Partitioning distribution: "+ str(sc.glom().map(len).collect()))
     println("Partitions structure: {}".format(geom.glom().collect()))
     val start = System.nanoTime()
 

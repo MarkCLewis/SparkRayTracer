@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
 import swiftvis2.raytrace._
 
 // TODO: Put in some meaningful case classes so we don't have tuples everywhere.
-case class Pixel(x:Int, y:Int)
+//case class Pixel(x:Int, y:Int)
 
 object Renderer3b {
 
