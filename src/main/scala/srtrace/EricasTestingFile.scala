@@ -70,8 +70,8 @@ object EricasTestingFile {
 
     println(geom.count)
     //println("Partitioning distribution: "+ str(sc.glom().map(len).collect()))
-    
-    println("Partitions structure: {}".format(sc.glom().collect()))
+
+    println("Partitions structure: {}".format(sc.getAllPools))
     val start = System.nanoTime()
 
 
