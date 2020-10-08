@@ -41,6 +41,7 @@ object EricasTestingFile {
     val conf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(conf)
     sc.setLogLevel("WARN")
+    sc.statusTracker.getExecutorInfos
 
     val size = 1000
     val minX = -150
@@ -71,7 +72,8 @@ object EricasTestingFile {
     println(geom.count)
     println("Partitioning distribution1: "+ geom.glom().map(a => a.length).collect().mkString)
     println("Partitioning distribution2: "+ geom.glom().collect().map(a => a.mkString).mkString)
-
+    println("Partitioning distribution3: "+ geom.glom().collect().map(a => a.mkString).mkString)
+    println("Partitioning distribution4: "+ sc.statusTracker.getExecutorInfos.mkString)
     // println("Partitions structure1: " + sc.getAllPools)
 
     val start = System.nanoTime()
