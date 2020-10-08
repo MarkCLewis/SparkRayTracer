@@ -73,7 +73,8 @@ object EricasTestingFile {
     println("Partitioning distribution1: "+ geom.glom().map(a => a.length).collect().mkString)
     println("Partitioning distribution2: "+ geom.glom().collect().map(a => a.mkString).mkString)
     println("Partitioning distribution3: "+ geom.glom().collect().map(a => a.mkString).mkString)
-    println("Partitioning distribution4: "+ sc.statusTracker.getExecutorInfos.map(a => "||"+ a.host() +", "+ a.numRunningTasks()+"||").mkString)
+    println("Partitioning distribution4: "+ geom.preferredLocations(geom.partitions(0)))
+    
     // println("Partitions structure1: " + sc.getAllPools)
 
     val start = System.nanoTime()
