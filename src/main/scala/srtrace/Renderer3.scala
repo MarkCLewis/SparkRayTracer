@@ -13,6 +13,8 @@ object Renderer3 {
 
   def render(sc: SparkContext, groupedGeoms: RDD[(Int, KDTreeGeometry[BoundingSphere])], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int): Unit = {
 
+    println("Partitioning distribution5: "+ sc.statusTracker.getExecutorInfos.map(a => "||"+ a.host() +", "+ a.numRunningTasks()+"||").mkString)
+
     val img = new RTImage {
       def width = bImg.getWidth()
 
@@ -24,6 +26,7 @@ object Renderer3 {
     }
     for (i <- 0 until size; j <- 0 until size) bImg.setRGB(i, j, 0xFF000000)
 
+    println("Partitioning distribution6: "+ sc.statusTracker.getExecutorInfos.map(a => "||"+ a.host() +", "+ a.numRunningTasks()+"||").mkString)
     val dupedRays: RDD[(Int, (Pixel, Ray))] = makeNPartitionsRays(sc, view._1, view._2, view._3, view._4, img, numPartitions, numRays)
     println(s"duped ${dupedRays.getNumPartitions}")
     val rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))] = dupedRays.join(groupedGeoms)
@@ -41,7 +44,7 @@ object Renderer3 {
     val colors: RDD[(Pixel, RTColor)] = generateColors(idRDD)
     println(s"colors ${colors.getNumPartitions}")
 
-
+    println("Partitioning distribution7: "+ sc.statusTracker.getExecutorInfos.map(a => "||"+ a.host() +", "+ a.numRunningTasks()+"||").mkString)
     combineAndSetColors(colors, img, numRays)
   }
 
