@@ -69,11 +69,11 @@ object EricasTestingFile {
     println(s"Num partitions = ${geom.getNumPartitions}")
     val geomNoRDD = if (args(0) == "1" || args(0) == "2") new ListScene(geom.collect.map(_._2):_*) else null
 
-    println(geom.count)
-    println("Partitioning distribution1: "+ geom.glom().map(a => a.length).collect().mkString)
-    println("Partitioning distribution2: "+ geom.glom().collect().map(a => a.mkString).mkString)
-    println("Partitioning distribution3: "+ geom.glom().collect().map(a => a.mkString).mkString)
-    println("Partitioning distribution4: "+ geom.preferredLocations(geom.partitions(0)))
+    // println(geom.count)
+    // println("Partitioning distribution1: "+ geom.glom().map(a => a.length).collect().mkString)
+    // println("Partitioning distribution2: "+ geom.glom().collect().map(a => a.mkString).mkString)
+    // println("Partitioning distribution3: "+ geom.glom().collect().map(a => a.mkString).mkString)
+    // println("Partitioning distribution4: "+ geom.preferredLocations(geom.partitions(0)))
     
     // println("Partitions structure1: " + sc.getAllPools)
 
