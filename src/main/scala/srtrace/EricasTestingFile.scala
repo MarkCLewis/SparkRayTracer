@@ -43,7 +43,7 @@ object EricasTestingFile {
     sc.setLogLevel("WARN")
     sc.statusTracker.getExecutorInfos
 
-    val size = 1000
+    val size = 10
     val minX = -150
     val maxX = 150
     val numPartitions = args(1).toInt

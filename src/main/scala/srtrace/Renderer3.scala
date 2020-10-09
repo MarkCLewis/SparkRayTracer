@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import swiftvis2.raytrace._
+import java.net.InetAddress
 
 // TODO: Put in some meaningful case classes so we don't have tuples everywhere.
 case class Pixel(x:Int, y:Int)
@@ -66,6 +67,7 @@ object Renderer3 {
   private def intersectEye(rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))]): RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = {
     rayGeoms.map(indiv => {
       val (n, ((pix, ray), geom)) = indiv
+      println(n, geom.boundingBox.min, java.net.InetAddress.getLocalHost().getHostAddress())
       (n, (pix, (ray, (geom) intersect ray)))
     })
   }
