@@ -67,7 +67,7 @@ object Renderer3 {
   private def intersectEye(rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))]): RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = {
     rayGeoms.map(indiv => {
       val (n, ((pix, ray), geom)) = indiv
-      println(n, geom.boundingBox.min, java.net.InetAddress.getLocalHost().getHostAddress())
+      println("eye", n, geom.boundingBox.min, java.net.InetAddress.getLocalHost().getHostAddress())
       (n, (pix, (ray, (geom) intersect ray)))
     })
   }
@@ -128,7 +128,7 @@ object Renderer3 {
     val joined: RDD[(Int, (((Int, Pixel), Ray, RTColor, IntersectData), KDTreeGeometry[BoundingSphere]))] = lightRays.join(geom)
     val withOIDs: RDD[(Int, ((Int, Pixel), (Ray, Option[IntersectData], RTColor, IntersectData)))] = joined.map(elem => {
       val (n, (((index, pix), ray, l, id), geom)) = elem
-      println(n, geom.boundingBox.min, java.net.InetAddress.getLocalHost().getHostAddress())
+      println("lights", n, geom.boundingBox.min, java.net.InetAddress.getLocalHost().getHostAddress())
       (n, ((index, pix), (ray, (geom intersect ray), l, id)))
     })
     val notPartitioned: RDD[((Int, Pixel), (Ray, Option[IntersectData], RTColor, IntersectData))] = withOIDs.values
