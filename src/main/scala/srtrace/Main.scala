@@ -17,6 +17,7 @@ object Main {
     //val conf = new SparkConf().setAppName("Renderer3").setMaster("local[*]")//.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val kryoConf = new SparkConf().setAppName("Renderer3b").setMaster("local[*]")
     val sc = new SparkContext(kryoConf)
+    conf.registerKryoClasses(Array(classOf[Pixel], classOf[KDTreeGeometry[BoundingSphere]], classOf[GeomSphere], classOf[PointLight], classOf[Ray]))
     sc.setLogLevel("WARN")
 
     val geom = sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
