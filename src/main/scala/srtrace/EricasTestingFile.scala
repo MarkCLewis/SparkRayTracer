@@ -42,7 +42,6 @@ object EricasTestingFile {
     val sc = new SparkContext(kryoConf)
     kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     kryoConf.registerKryoClasses(Array(classOf[Pixel], classOf[KDTreeGeometry[BoundingSphere]], classOf[GeomSphere], classOf[PointLight], classOf[Ray], classOf[IntersectData]))
-    val sc = new SparkContext(conf)
     sc.setLogLevel("WARN")
     sc.statusTracker.getExecutorInfos
 
