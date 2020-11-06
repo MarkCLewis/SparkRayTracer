@@ -27,28 +27,28 @@ object EricasTestingFile {
   def createKDTrees(sc: SparkContext, r: RDD[(Int,(Int, Double, Double))]): RDD[(Int, KDTreeGeometry[BoundingSphere])] = {
       r.mapValues(t => GeometrySetup.readRingWithOffset(t._1, t._2, t._3))
   }
-
-  val cartAndRadNumbers = Vector[Int](5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010, 5011, 
+  
+  val realCartAndRadNumbers = Vector[Int](5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010, 5011, 
      5012, 5013, 5014, 5015, 5016, 5017, 5018, 5019, 5020, 5021, 5022, 5023, 5024, 5025, 5026, 5027, 5028, 5029, 
      6000, 6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009, 6010, 6011, 6012, 6013, 6014, 6015, 6016, 6017,
-     6018, 6019, 6020, 6021, 6022, 6023, 6024, 6025,6026, 6027, 6028, 6029)
-
-  def main(args: Array[String]) = {
-		if (args.length < 2) {
-			println("You need to specify a renderer # and how many simulations/partitions.")
-			sys.exit(0)
-		}
+     6018, 6019, 6020, 6021, 6022, 6023, 6024, 6025, 6026, 6027, 6028, 6029)
+     def main(args: Array[String]) = {
+         if (args.length < 2) {
+             println("You need to specify a renderer # and how many simulations/partitions.")
+             sys.exit(0)
+        }
     val kryoConf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(kryoConf)
     kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     kryoConf.registerKryoClasses(Array(classOf[Pixel], classOf[KDTreeGeometry[BoundingSphere]], classOf[GeomSphere], classOf[PointLight], classOf[Ray], classOf[IntersectData]))
     sc.setLogLevel("WARN")
     sc.statusTracker.getExecutorInfos
-
+    val numPartitions = args(1).toInt
+            
+    val cartAndRadNumbers = (0 until (numPartitions.toDouble / realCartAndRadNumbers.length).ceil.toInt).flatMap(_ => realCartAndRadNumbers)
     val size = 10
     val minX = -150
     val maxX = 150
-    val numPartitions = args(1).toInt
     val usedCartAndRadNumbers = cartAndRadNumbers.take(numPartitions)
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     //val lights: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
@@ -56,8 +56,18 @@ object EricasTestingFile {
       PointLight(new RTColor(0.9, 0.9, 0.9, 1), Point(1e-1, 0, 1e-2)),
       PointLight(new RTColor(0.5, 0.4, 0.1, 1), Point(-1e-1, 0, 1e-2))
     )
-    val view = GeometrySetup.topView(numPartitions)//.topView()//.standardView()
-    val offsets = (0 to 100).map(i => (i*2.0e-5 - (numPartitions-1) * 1e-5,0.0))
+    val n = math.sqrt(numPartitions / 10).ceil.toInt
+    val view = GeometrySetup.topView(10 * n)//.topView()//.standardView()
+    val offsets = for(x <- 0 until 10*n; y <- 0 until n) yield {
+        (x * 2.0e-5 - (10*n - 1) * 1e-5, y * 2e-4 - (n - 1) * 1e-4)
+    }
+    /*
+        algebra zone:
+        n * 10n = numPartitions
+        10n^2 = numPartitions
+        n = sqrt(numPartitions / 10).ceil
+
+    */
 
     
 

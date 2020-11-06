@@ -28,7 +28,7 @@ object StandardRenderer {
       (0 until numSims).flatMap(
         i =>
           GeometrySetup.readRingWithOffsetSpheres(
-            EricasTestingFile.cartAndRadNumbers(i),
+            EricasTestingFile.realCartAndRadNumbers(i),
             i * 2e-5 - (numSims-1) * 1e-5,
             0.0
           )

@@ -87,7 +87,7 @@ object GeometrySetup {
 		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
 		//eye, topLeft, right, down
 	}
-	def topView(distMult: Int): (Point, Point, Vect, Vect) = {
+	def topView(distMult: Double): (Point, Point, Vect, Vect) = {
 		(Point(0.0, 0.0, distMult*1e-5), Point(-1e-5, 1e-5, (distMult-1)*1e-5), Vect(2 * 1e-5, 0, 0), Vect(0, -2 * 1e-5, 0))
 	}
 
