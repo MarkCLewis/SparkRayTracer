@@ -1,4 +1,4 @@
-package acrt.cluster.untyped.backend
+package kurtsgift
 
 import scala.concurrent.{Future, Await, ExecutionContext}
 import swiftvis2.raytrace.{Bounds, Geometry, BoundsBuilder, SphereBoundsBuilder, IntersectData, Sphere, Box, Point, Ray}

@@ -1,6 +1,6 @@
-package acrt.cluster.untyped.backend
+package kurtsgift
 
-import com.fasterxml.jackson.annotation.{JsonTypeInfo, JsonSubTypes}
+
 import scala.concurrent.{Future, Await, ExecutionContext}
 import swiftvis2.raytrace.{Point, RTColor, Geometry, Sphere, Vect, IntersectData, Ray, Box, BoundingBox}
 
