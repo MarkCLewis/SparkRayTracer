@@ -21,6 +21,7 @@ object EricasTestingFile {
   }
 
   def giveOffsets(sc: SparkContext, r: RDD[(Int, Int)], offsetArray: IndexedSeq[(Double, Double)]) : RDD[(Int,(Int, Double, Double))] = {
+    
       r.map( t => (t._1, (t._2, offsetArray(t._1)._1, offsetArray(t._1)._2)))
   }
 
@@ -56,7 +57,7 @@ object EricasTestingFile {
       PointLight(new RTColor(0.9, 0.9, 0.9, 1), Point(1e-1, 0, 1e-2)),
       PointLight(new RTColor(0.5, 0.4, 0.1, 1), Point(-1e-1, 0, 1e-2))
     )
-    val n = math.sqrt(numPartitions / 10).ceil.toInt
+    val n = math.sqrt(numPartitions.toDouble / 10.0).ceil.toInt
     val view = GeometrySetup.topView(10 * n)//.topView()//.standardView()
     val offsets = for(x <- 0 until 10*n; y <- 0 until n) yield {
         (x * 2.0e-5 - (10*n - 1) * 1e-5, y * 2e-4 - (n - 1) * 1e-4)
