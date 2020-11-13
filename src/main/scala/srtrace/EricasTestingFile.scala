@@ -47,7 +47,7 @@ object EricasTestingFile {
     val numPartitions = args(1).toInt
             
     val cartAndRadNumbers = (0 until (numPartitions.toDouble / realCartAndRadNumbers.length).ceil.toInt).flatMap(_ => realCartAndRadNumbers)
-    val size = 10
+    val size = 800
     val minX = -150
     val maxX = 150
     val usedCartAndRadNumbers = cartAndRadNumbers.take(numPartitions)
