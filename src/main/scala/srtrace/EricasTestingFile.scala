@@ -17,7 +17,7 @@ object EricasTestingFile {
       for (i <- cartAndRadNumbersArray.indices) yield {
           ret(i) = (i % partitionNum, cartAndRadNumbersArray(i))
       }
-      sc.parallelize(ret).repartition(100)
+      sc.parallelize(ret, partitionNum)//.repartition(partitionNum)
   }
 
   def giveOffsets(sc: SparkContext, r: RDD[(Int, Int)], offsetArray: IndexedSeq[(Double, Double)]) : RDD[(Int,(Int, Double, Double))] = {
@@ -41,6 +41,7 @@ object EricasTestingFile {
     val kryoConf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(kryoConf)
     kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    kryoConf.set("spark.rpc.message.maxSize", "300")
     kryoConf.registerKryoClasses(Array(classOf[Pixel], classOf[KDTreeGeometry[BoundingSphere]], classOf[GeomSphere], classOf[PointLight], classOf[Ray], classOf[IntersectData]))
     sc.setLogLevel("WARN")
     sc.statusTracker.getExecutorInfos
