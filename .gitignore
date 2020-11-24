@@ -3,6 +3,7 @@
 .vscode
 project/project
 project/metals.sbt
+*.bin
 
 # Created by https://www.gitignore.io/api/sbt,scala,eclipse
 

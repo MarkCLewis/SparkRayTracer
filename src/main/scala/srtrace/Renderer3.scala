@@ -119,7 +119,6 @@ object Renderer3 {
       val li = pl.point
       val c = pl.col
       (n, ((index, pix), Ray(loc + id.norm * 0.0001 * id.geom.boundingSphere.radius, li), c, id))
-
     })
     lightRays
   }
