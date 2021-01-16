@@ -43,7 +43,7 @@ object ETF2 {
     val kryoConf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(kryoConf)
     kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    kryoConf.registerKryoClasses(Array(classOf[Pixel], classOf[KDTreeGeometry[BoundingSphere]], classOf[GeomSphere], classOf[PointLight], classOf[Ray], classOf[IntersectData]))
+    kryoConf.registerKryoClasses(Array(classOf[Pixel], classOf[KDTreeContainer[BoundingSphere]], classOf[KDTreeGeometry[BoundingSphere]], classOf[IntersectContainer], classOf[GeomSphere], classOf[PointLight], classOf[Ray], classOf[IntersectData]))
     sc.setLogLevel("WARN")
     sc.statusTracker.getExecutorInfos
     val numPartitions = args(1).toInt
