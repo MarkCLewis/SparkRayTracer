@@ -10,6 +10,7 @@ import javax.swing._
 import java.awt.Graphics
 
 import kurtsgift._
+import scala.concurrent.ExecutionContext
 
 
 object ETF2 {
@@ -43,7 +44,7 @@ object ETF2 {
     val kryoConf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     val sc = new SparkContext(kryoConf)
     kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    kryoConf.registerKryoClasses(Array(classOf[Pixel], classOf[KDTreeContainer[BoundingSphere]], classOf[KDTreeGeometry[BoundingSphere]], classOf[IntersectContainer], classOf[GeomSphere], classOf[PointLight], classOf[Ray], classOf[IntersectData]))
+    kryoConf.registerKryoClasses(Array(classOf[Pixel], classOf[ExecutionContext], classOf[KDTreeContainer[BoundingSphere]], classOf[KDTreeGeometry[BoundingSphere]], classOf[IntersectContainer], classOf[GeomSphere], classOf[PointLight], classOf[Ray], classOf[IntersectData]))
     sc.setLogLevel("WARN")
     sc.statusTracker.getExecutorInfos
     val numPartitions = args(1).toInt
