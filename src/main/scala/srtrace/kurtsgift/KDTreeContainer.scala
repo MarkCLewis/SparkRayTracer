@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 //Serializable Container for KDTreeGeometry, taken almost entirely from Swiftvis2
 class KDTreeContainer[B <: Bounds](geometry: Seq[Geometry], val MaxGeom: Int = 5, builder: BoundsBuilder[B] = SphereBoundsBuilder) extends Geometry {
   import KDTreeContainer._
-  @transient lazy private val root = buildTree(geometry)
+  private val root = buildTree(geometry)
   def intersect(r: Ray): Option[IntersectData] = {
     def helper(n: Node[B]): Option[IntersectData] = n match {
       case InternalNode(g, splitDim, splitValue, left, right, bounds) =>
