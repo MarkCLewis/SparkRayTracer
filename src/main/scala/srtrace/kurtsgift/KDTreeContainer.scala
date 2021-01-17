@@ -2,12 +2,12 @@ package kurtsgift
 
 import scala.concurrent.{Future, Await, ExecutionContext}
 import swiftvis2.raytrace.{Bounds, Geometry, BoundsBuilder, SphereBoundsBuilder, IntersectData, Sphere, Box, Point, Ray}
+import scala.concurrent.ExecutionContext.Implicits
 
 //Serializable Container for KDTreeGeometry, taken almost entirely from Swiftvis2
-class KDTreeContainer[B <: Bounds](geometry: Seq[Geometry], val MaxGeom: Int = 5, builder: BoundsBuilder[B] = SphereBoundsBuilder) (implicit ec: ExecutionContext) extends Geometry {
+class KDTreeContainer[B <: Bounds](geometry: Seq[Geometry], val MaxGeom: Int = 5, builder: BoundsBuilder[B] = SphereBoundsBuilder) (protected implicit val ec: ExecutionContext) extends Geometry {
   import KDTreeContainer._
-
-  private val root = buildTree(geometry)
+  @transient lazy private val root = buildTree(geometry)
   def intersect(r: Ray): Option[IntersectData] = {
     def helper(n: Node[B]): Option[IntersectData] = n match {
       case InternalNode(g, splitDim, splitValue, left, right, bounds) =>
@@ -33,7 +33,7 @@ class KDTreeContainer[B <: Bounds](geometry: Seq[Geometry], val MaxGeom: Int = 5
   override def boundingSphere: Sphere = root.bounds.boundingSphere
   override def boundingBox: Box = root.bounds.boundingBox
 
-  private def buildTree(geom: Seq[Geometry]): Node[B] = {
+  private def buildTree(geom: Seq[Geometry]) (implicit ec:ExecutionContext): Node[B] = {
     def helper(g: Seq[Geometry], min: Point, max: Point, level: Int): Future[Node[B]] = {
       val body = () => {
         val size = (max - min).magnitude
@@ -83,7 +83,7 @@ class KDTreeContainer[B <: Bounds](geometry: Seq[Geometry], val MaxGeom: Int = 5
 }
 
 object KDTreeContainer {
- sealed trait Node[B] extends Serializable {
+  sealed trait Node[B] extends Serializable {
     val g: Seq[Geometry]
     val bounds: B
   }
