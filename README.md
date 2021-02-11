@@ -1,8 +1,5 @@
-# Spark Ray Tracing for Large Geometry Scenes
+# Distributed Ray Tracing of Large Scenes Using Spark
 
-This repository holds the code for a research project on using Spark to do
-ray tracing of large geometry scenes that don't fit on a single computer.
+https://youtu.be/_euIDGeisoQ
 
-## TODO
-
-- Renderer3 doesn't handle num rays. Only makes the image darker.
+Created by Erica Cater, Connor Weisenberger, and Dr. Mark Lewis at Trinity University.
