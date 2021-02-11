@@ -39,10 +39,16 @@ object EricasTestingFile {
              sys.exit(0)
         }
     val kryoConf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
-    val sc = new SparkContext(kryoConf)
     kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    kryoConf.set("spark.kryoserializer.buffer.mb", "8")
+    kryoConf.set("spark.reducer.maxReqsInFlight", "1")
+    kryoConf.set("spark.shuffle.io.retryWait", "60s")
+    kryoConf.set("spark.shuffle.io.maxRetries", "10")
+
     kryoConf.registerKryoClasses(Array(classOf[Pixel], classOf[KDTreeGeometry[BoundingSphere]], classOf[GeomSphere], classOf[PointLight], classOf[Ray], classOf[IntersectData]))
-    sc.setLogLevel("WARN")
+    println(kryoConf.toDebugString)
+    val sc = new SparkContext(kryoConf)
+    sc.setLogLevel("ALL")
     sc.statusTracker.getExecutorInfos
     val numPartitions = args(1).toInt
             
@@ -62,15 +68,7 @@ object EricasTestingFile {
     val offsets = for(x <- 0 until 10*n; y <- 0 until n) yield {
         (x * 2.0e-5 - (10*n - 1) * 1e-5, y * 2e-4 - (n - 1) * 1e-4)
     }
-    /*
-        algebra zone:
-        n * 10n = numPartitions
-        10n^2 = numPartitions
-        n = sqrt(numPartitions / 10).ceil
-
-    */
-
-    
+   
 
     //val offsets = Array[(Double, Double)]((0,0), (2.0e-5, 0), (-2.0e-5, 0), (2*2.0e-5, 0), (-2*2.0e-5, 0), (3*2.0e-5, 0), (-3*2.0e-5, 0), (4*2.0e-5, 0), (-4*2.0e-5, 0), (5*2.0e-5, 0))
         // (0, 2.0e-5), (0, -2.0e-5), (0, 2*2.0e-5), (0, -2*2.0e-5)), 
