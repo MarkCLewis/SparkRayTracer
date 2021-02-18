@@ -82,6 +82,10 @@ object GeometrySetup {
 		val particleSpheres = readRingWithOffsetSpheres(step, xoff, yoff)
 		new KDTreeGeometry[BoundingSphere](particleSpheres)
 	}
+	def readRingWithOffsetBox(step: Int, xoff: Double, yoff: Double): KDTreeGeometry[BoundingBox] = {
+		val particleSpheres = readRingWithOffsetSpheres(step, xoff, yoff)
+		new KDTreeGeometry[BoundingBox](particleSpheres, 5, BoxBoundsBuilder)
+	}
 
 	def standardView(): (Point, Point, Vect, Vect) = {
 		(Point(0.0, 0.0, 0.0), Point(-2.0, 2.0, 2.0), Vect(4.0, 0.0, 0.0), Vect(0.0, 0.0, -4.0))
