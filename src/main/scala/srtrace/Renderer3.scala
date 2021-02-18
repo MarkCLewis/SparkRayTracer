@@ -6,6 +6,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import swiftvis2.raytrace._
 import java.net.InetAddress
+import org.apache.spark.api.java.StorageLevels
 
 // TODO: Put in some meaningful case classes so we don't have tuples everywhere.
 case class Pixel(x:Int, y:Int)
@@ -15,7 +16,6 @@ object Renderer3 {
   def render(sc: SparkContext, groupedGeoms: RDD[(Int, KDTreeGeometry[BoundingSphere])], light: List[PointLight], bImg: BufferedImage, view: (Point, Point, Vect, Vect), size: Int, numRays: Int = 1, numPartitions: Int): Unit = {
 
     println("Partitioning distribution5: "+ sc.statusTracker.getExecutorInfos.map(a => "||"+ a.host() +", "+ a.numRunningTasks()+"||").mkString)
-
     val img = new RTImage {
       def width = bImg.getWidth()
 
@@ -28,21 +28,21 @@ object Renderer3 {
     for (i <- 0 until size; j <- 0 until size) bImg.setRGB(i, j, 0xFF000000)
 
     println("Partitioning distribution6: "+ sc.statusTracker.getExecutorInfos.map(a => "||"+ a.host() +", "+ a.numRunningTasks()+"||").mkString)
-    val dupedRays: RDD[(Int, (Pixel, Ray))] = makeNPartitionsRays(sc, view._1, view._2, view._3, view._4, img, numPartitions, numRays)
+    val dupedRays: RDD[(Int, (Pixel, Ray))] = makeNPartitionsRays(sc, view._1, view._2, view._3, view._4, img, numPartitions, numRays).persist((StorageLevels.MEMORY_AND_DISK))
     println(s"duped ${dupedRays.getNumPartitions}")
-    val rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))] = dupedRays.join(groupedGeoms)
+    val rayGeoms: RDD[(Int, (KDTreeGeometry[BoundingSphere], (Pixel, Ray)))] = groupedGeoms.join(dupedRays).persist((StorageLevels.MEMORY_AND_DISK))
     println(s"rayGeoms ${rayGeoms.getNumPartitions}")
-    val rayoids: RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = intersectEye(rayGeoms)
+    val rayoids: RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = intersectEye(rayGeoms).persist((StorageLevels.MEMORY_AND_DISK))
     println(s"rayoids ${rayoids.getNumPartitions}")
-    val realIntersects: RDD[(Pixel, (Ray, Option[IntersectData]))] = departitionAndFindShortest(rayoids)
+    val realIntersects: RDD[(Pixel, (Ray, Option[IntersectData]))] = departitionAndFindShortest(rayoids).persist((StorageLevels.MEMORY_AND_DISK))
     println(s"realIntersects ${realIntersects.getNumPartitions}")
-    val idLights: RDD[((Int, Pixel), (IntersectData, PointLight))] = explodeLights(realIntersects, light)
+    val idLights: RDD[((Int, Pixel), (IntersectData, PointLight))] = explodeLights(realIntersects, light).persist((StorageLevels.MEMORY_AND_DISK))
     println(s"idLights ${idLights.getNumPartitions}")
-    val lightColors: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))] = makeRaysToLights(idLights, numPartitions)
+    val lightColors: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))] = makeRaysToLights(idLights, numPartitions).persist((StorageLevels.MEMORY_AND_DISK))
     println(s"lightColors ${lightColors.getNumPartitions}")
-    val idRDD: RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = checkLightRaysForGeomIntersections(lightColors, groupedGeoms)
+    val idRDD: RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = checkLightRaysForGeomIntersections(lightColors, groupedGeoms).persist((StorageLevels.MEMORY_AND_DISK))
     println(s"idRDD ${idRDD.getNumPartitions}")
-    val colors: RDD[(Pixel, RTColor)] = generateColors(idRDD)
+    val colors: RDD[(Pixel, RTColor)] = generateColors(idRDD).persist((StorageLevels.MEMORY_AND_DISK))
     println(s"colors ${colors.getNumPartitions}")
 
     println("Partitioning distribution7: "+ sc.statusTracker.getExecutorInfos.map(a => "||"+ a.host() +", "+ a.numRunningTasks()+"||").mkString)
@@ -64,9 +64,9 @@ object Renderer3 {
     sc.parallelize(rays).repartition(numPartitions)
   }
   
-  private def intersectEye(rayGeoms: RDD[(Int, ((Pixel, Ray), KDTreeGeometry[BoundingSphere]))]): RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = {
+  private def intersectEye(rayGeoms: RDD[(Int, (KDTreeGeometry[BoundingSphere], (Pixel, Ray)))]): RDD[(Int, (Pixel, (Ray, Option[IntersectData])))] = {
     rayGeoms.map(indiv => {
-      val (n, ((pix, ray), geom)) = indiv
+      val (n, (geom, (pix, ray))) = indiv
       println("eye", n, geom.boundingBox.min, java.net.InetAddress.getLocalHost().getHostAddress())
       (n, (pix, (ray, (geom) intersect ray)))
     })
@@ -124,9 +124,9 @@ object Renderer3 {
   }
 
   private def checkLightRaysForGeomIntersections(lightRays: RDD[(Int, ((Int, Pixel), Ray, RTColor, IntersectData))], geom: RDD[(Int, KDTreeGeometry[BoundingSphere])]): RDD[(Pixel, (Ray, Option[IntersectData], RTColor, IntersectData))] = {
-    val joined: RDD[(Int, (((Int, Pixel), Ray, RTColor, IntersectData), KDTreeGeometry[BoundingSphere]))] = lightRays.join(geom)
+    val joined: RDD[(Int, (KDTreeGeometry[BoundingSphere], ((Int, Pixel), Ray, RTColor, IntersectData)))] = geom.join(lightRays)
     val withOIDs: RDD[(Int, ((Int, Pixel), (Ray, Option[IntersectData], RTColor, IntersectData)))] = joined.map(elem => {
-      val (n, (((index, pix), ray, l, id), geom)) = elem
+      val (n, (geom, ((index, pix), ray, l, id))) = elem
       println("lights", n, geom.boundingBox.min, java.net.InetAddress.getLocalHost().getHostAddress())
       (n, ((index, pix), (ray, (geom intersect ray), l, id)))
     })

@@ -8,6 +8,7 @@ import swiftvis2.raytrace._
 import java.awt.image.BufferedImage
 import javax.swing._
 import java.awt.Graphics
+import org.apache.spark.api.java.StorageLevels
 
 
 object EricasTestingFile {
@@ -17,7 +18,7 @@ object EricasTestingFile {
       for (i <- cartAndRadNumbersArray.indices) yield {
           ret(i) = (i % partitionNum, cartAndRadNumbersArray(i))
       }
-      sc.parallelize(ret).repartition(partitionNum)
+      sc.parallelize(ret).repartition(800)
   }
 
   def giveOffsets(sc: SparkContext, r: RDD[(Int, Int)], offsetArray: IndexedSeq[(Double, Double)]) : RDD[(Int,(Int, Double, Double))] = {
@@ -26,7 +27,7 @@ object EricasTestingFile {
   }
 
   def createKDTrees(sc: SparkContext, r: RDD[(Int,(Int, Double, Double))]): RDD[(Int, KDTreeGeometry[BoundingSphere])] = {
-      r.mapValues(t => GeometrySetup.readRingWithOffset(t._1, t._2, t._3))
+      r.map(t => (t._1, GeometrySetup.readRingWithOffset(t._2._1, t._2._2, t._2._3))).persist(StorageLevels.MEMORY_AND_DISK)
   }
   
   val realCartAndRadNumbers = Vector[Int](5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010, 5011, 
@@ -38,9 +39,18 @@ object EricasTestingFile {
              println("You need to specify a renderer # and how many simulations/partitions.")
              sys.exit(0)
         }
+    System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val kryoConf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
     kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    kryoConf.set("spark.kryoserializer.buffer.mb", "8")
+    kryoConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "true")
+    kryoConf.set("spark.executor.cores", "5")
+    kryoConf.set("spark.dynamicAllocation.enabled", "true")
+    kryoConf.set("spark.worker.memory", "16G")
+    kryoConf.set("spark.executor.cores", "31")
+    kryoConf.set("spark.executor.memory", "15G")
+    kryoConf.set("spark.dynamicAllocation.initialExecutors", "8")
+    kryoConf.set("spark.dynamicAllocation.maxExecutors", "8")
+    kryoConf.set("spark.kryoserializer.buffer", "2047M")
     kryoConf.set("spark.reducer.maxReqsInFlight", "1")
     kryoConf.set("spark.shuffle.io.retryWait", "60s")
     kryoConf.set("spark.shuffle.io.maxRetries", "10")
@@ -73,7 +83,7 @@ object EricasTestingFile {
     //val offsets = Array[(Double, Double)]((0,0), (2.0e-5, 0), (-2.0e-5, 0), (2*2.0e-5, 0), (-2*2.0e-5, 0), (3*2.0e-5, 0), (-3*2.0e-5, 0), (4*2.0e-5, 0), (-4*2.0e-5, 0), (5*2.0e-5, 0))
         // (0, 2.0e-5), (0, -2.0e-5), (0, 2*2.0e-5), (0, -2*2.0e-5)), 
 
-    val geom = createKDTrees(sc, giveOffsets(sc, divisionOfFiles(sc, numPartitions, usedCartAndRadNumbers), offsets)).cache()//.collect()//sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
+    val geom = createKDTrees(sc, giveOffsets(sc, divisionOfFiles(sc, numPartitions, usedCartAndRadNumbers), offsets))//.collect()//sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
     // val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
     // val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
 

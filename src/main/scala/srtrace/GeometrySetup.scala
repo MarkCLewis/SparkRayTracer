@@ -79,7 +79,7 @@ object GeometrySetup {
 	}
 
 	def readRingWithOffset(step: Int, xoff: Double, yoff: Double): KDTreeGeometry[BoundingSphere] = {
-		val particleSpheres = readRingWithOffsetSpheres(step, xoff, yoff)
+		lazy val particleSpheres = readRingWithOffsetSpheres(step, xoff, yoff)
 		new KDTreeGeometry[BoundingSphere](particleSpheres)
 	}
 
