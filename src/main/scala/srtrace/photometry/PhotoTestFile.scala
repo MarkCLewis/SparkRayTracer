@@ -10,7 +10,6 @@ import javax.swing._
 import java.awt.Graphics
 import srtrace._
 
-
 object PhotoTestFile extends App {
   def divisionOfFiles(
       sc: SparkContext,
@@ -47,14 +46,28 @@ object PhotoTestFile extends App {
     6012, 6013, 6014, 6015, 6016, 6017, 6018, 6019, 6020, 6021, 6022, 6023,
     6024, 6025, 6026, 6027, 6028, 6029)
 
-  val kryoConf = new SparkConf().setAppName("ETF") //.setMaster("local[*]")
-  val sc = new SparkContext(kryoConf)
+  val kryoConf = new SparkConf().setAppName("photo") //.setMaster("local[*]")
   kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+  //kryoConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "true")
+  kryoConf.set("spark.executor.cores", "5")
+  //kryoConf.set("spark.dynamicAllocation.enabled", "true")
+  //kryoConf.set("spark.worker.memory", "16G")
+  //kryoConf.set("spark.executor.cores", "31")
+  kryoConf.set("spark.executor.memory", "15G")
+  //kryoConf.set("spark.dynamicAllocation.initialExecutors", "8")
+  //kryoConf.set("spark.dynamicAllocation.maxExecutors", "8")
+  kryoConf.set("spark.kryoserializer.buffer", "2047M")
+  //kryoConf.set("spark.reducer.maxReqsInFlight", "1")
+  kryoConf.set("spark.shuffle.io.retryWait", "60s")
+  kryoConf.set("spark.shuffle.io.maxRetries", "10")
+  val sc = new SparkContext(kryoConf)
+  
   kryoConf.registerKryoClasses(
     Array(
       classOf[Pixel],
       classOf[KDTreeGeometry[BoundingBox]],
       classOf[GeomSphere],
+      classOf[ScatterableSphere],
       classOf[PointLight],
       classOf[Ray],
       classOf[IntersectData]
@@ -76,7 +89,9 @@ object PhotoTestFile extends App {
   //val lights: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
   val lights = List(
     PointLight(new RTColor(0.9, 0.9, 0.9, 1), Point(1e-1, 0, 1e-2)),
-    PointLight(new RTColor(0.5, 0.4, 0.1, 1), Point(-1e-1, 0, 1e-2))
+    PointLight(new RTColor(0.5, 0.4, 0.1, 1), Point(-1e-1, 0, 1e-2)),
+    PointLight(new RTColor(0.8, 0.9, 0.9, 1), Point(1e-1, 0, 1e-2)),
+    PointLight(new RTColor(0.2, 0.4, 0.1, 1), Point(-1e-1, 0, 1e-2))
   )
   val n = math.sqrt(numPartitions.toDouble / 10.0).ceil.toInt
   val view = GeometrySetup.topView(10 * n) //.topView()//.standardView()
@@ -103,8 +118,6 @@ object PhotoTestFile extends App {
     )
   )
   PhoRender.render(sc, geom, lights, bImg, view, size, 1, numPartitions)
-
-
 
   sc.stop()
 }
