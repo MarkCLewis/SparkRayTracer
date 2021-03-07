@@ -18,7 +18,7 @@ import org.apache.spark.RangePartitioner
 case class ColorRay(color: RTColor, ray: Ray) extends Comparable[ColorRay] {
   def compareTo(that: ColorRay): Int = {
     val maxed = this.ray.p1.max(that.ray.p1)
-    if(maxed == this) 1
+    if(maxed == this.ray.p1) 1
     else if (this == that) 0
     else -1
   }
@@ -81,6 +81,7 @@ object PhoRender {
       pixelColors.foreach {
         case (p: Pixel, c: RTColor) => {
           if(c != RTColor.Black) { println(c + ", " + p) }
+          println("point: " + p + ", color: " + c)
           bImg.setRGB(p.x, p.y, c.toARGB)
         }
       }
@@ -98,7 +99,7 @@ object PhoRender {
 
   /*
     generates rays from each light to random points in the boundingbox at z=0.
-   */
+  */
   private def generatePhotonRays(
       lights: List[PointLight],
       groupedGeoms: RDD[(Int, KDTreeGeometry[BoundingBox])]
@@ -107,9 +108,10 @@ object PhoRender {
     groupedGeoms.values.flatMap(kdTree => {
       //replace with photonSource approach
       lights.flatMap(light => {
-        for (i <- 0 until 100) yield {
-          val boxDiff = kdTree.boundingBox.max - kdTree.boundingBox.min
-          val randomLocation = kdTree.boundingBox.min + Vect(rand.nextDouble * boxDiff.x, rand.nextDouble * boxDiff.x, rand.nextDouble * boxDiff.x)
+        for (i <- 0 until 100000) yield {
+          val boxDiff = kdTree.boundingBox.max.max(kdTree.boundingBox.min) - kdTree.boundingBox.min.min(kdTree.boundingBox.max)//(kdTree.boundingBox.max - kdTree.boundingBox.min)
+          val minPoint = kdTree.boundingBox.min.min(kdTree.boundingBox.max)
+          val randomLocation = minPoint + Vect(rand.nextDouble * boxDiff.x, rand.nextDouble * boxDiff.y, rand.nextDouble * boxDiff.z)
           ColorRay(
             light.col,
             Ray(
@@ -130,7 +132,7 @@ object PhoRender {
       groupedGeom: RDD[(Int, KDTreeGeometry[BoundingBox])],
       numPartitions: Int
   ): RDD[(ColorRay, IntersectData)] = {
-    val groupedRays = cRays.flatMap(ray => (0 until numPartitions).map(x => (x, ray)))
+    val groupedRays = cRays.flatMap(ray => (0 to numPartitions).map(x => (x, ray)))
     val partitionerTarget = groupedGeom
       .join(groupedRays)
       .map(x => {
@@ -241,8 +243,9 @@ object PhoRender {
     val topLeft = view._2
     val right = view._3
     val down = view._4
-    val x = viewDiff.x - topLeft.x
-    val y = ((topLeft.y - viewDiff.y.abs).abs)
-    Pixel(((x / right.x) * (size -1)).toInt, ((y.abs / down.y.abs) * (size - 1)).toInt)
+    val x = viewDiff.x / right.magnitude
+    val y = (viewDiff.y / down.magnitude).abs//(viewDiff.y - topLeft.y).abs//((topLeft.y - viewDiff.y.abs).abs)
+    Pixel(((x / right.magnitude) * (size -1)).toInt, ((y.abs / down.magnitude.abs) * (size - 1)).toInt)
+    Pixel((x * size).toInt, (y * size).toInt)
   }
 }

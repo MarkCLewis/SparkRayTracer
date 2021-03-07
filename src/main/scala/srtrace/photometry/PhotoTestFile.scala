@@ -95,6 +95,7 @@ object PhotoTestFile extends App {
   )
   val n = math.sqrt(numPartitions.toDouble / 10.0).ceil.toInt
   val view = GeometrySetup.topView(10 * n) //.topView()//.standardView()
+  //val view = GeometrySetup.standardView()
   val offsets = for (x <- 0 until 10 * n; y <- 0 until n) yield {
     (x * 2.0e-5 - (10 * n - 1) * 1e-5, y * 2e-4 - (n - 1) * 1e-4)
   }
@@ -117,6 +118,10 @@ object PhotoTestFile extends App {
       offsets
     )
   )
+  //val geom = sc.parallelize(GeometrySetup.smallPhoGeom())
+  
+  
+
   PhoRender.render(sc, geom, lights, bImg, view, size, 1, numPartitions)
 
   sc.stop()

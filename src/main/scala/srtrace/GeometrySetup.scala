@@ -2,6 +2,8 @@ package srtrace
 
 import java.net.URL
 
+import scala.util.Random
+
 import data.CartAndRad
 import swiftvis2.raytrace._
 
@@ -38,6 +40,10 @@ object GeometrySetup {
 		Array.fill(n)(randGeometry)
 	}
 
+	//for photometric geom we need an RDD[(Int, KDTreeGeometry[BoundingBox])]
+  	def smallPhoGeom():Array[(Int, KDTreeGeometry[BoundingBox])] = {
+		Array((1, new KDTreeGeometry[BoundingBox](randomGeometryActualArr(new Random(), 10, -10, 10, 15, 10, -10, 4, 20), 5, BoxBoundsBuilder)))
+  	}
 
 	def readParticles(): Geometry = {
 		//Pulls the geometry data from the supplied file within the given directory. Assigns the color of the spheres to black.
