@@ -108,7 +108,7 @@ object PhoRender {
     groupedGeoms.values.flatMap(kdTree => {
       //replace with photonSource approach
       lights.flatMap(light => {
-        for (i <- 0 until 100000) yield {
+        for (i <- 0 until 10000) yield {
           val boxDiff = kdTree.boundingBox.max.max(kdTree.boundingBox.min) - kdTree.boundingBox.min.min(kdTree.boundingBox.max)//(kdTree.boundingBox.max - kdTree.boundingBox.min)
           val minPoint = kdTree.boundingBox.min.min(kdTree.boundingBox.max)
           val randomLocation = minPoint + Vect(rand.nextDouble * boxDiff.x, rand.nextDouble * boxDiff.y, rand.nextDouble * boxDiff.z)
@@ -164,9 +164,10 @@ object PhoRender {
   ): RDD[ColorRay] = {
     hitCRays.map({
       case ((cRay: ColorRay, id: IntersectData)) =>
+        val geomSize = id.geom.boundingSphere.radius
         val hitPoint = id.point
         val hitGeom = id.geom
-        val rayToEye = Ray(hitPoint, eye)
+        val rayToEye = Ray(hitPoint + id.norm * 0.0001, eye)
         //val scatterPercent = hitGeom.asInstanceOf[ScatterableSphere].fractionScattered(cRay.ray.dir, rayToEye.dir, id)
         ColorRay(cRay.color, rayToEye)
     })
@@ -244,7 +245,7 @@ object PhoRender {
     val right = view._3
     val down = view._4
     val x = viewDiff.x / right.magnitude
-    val y = (viewDiff.y / down.magnitude).abs//(viewDiff.y - topLeft.y).abs//((topLeft.y - viewDiff.y.abs).abs)
+    val y = (viewDiff.z / down.magnitude).abs//(viewDiff.y - topLeft.y).abs//((topLeft.y - viewDiff.y.abs).abs)
     Pixel(((x / right.magnitude) * (size -1)).toInt, ((y.abs / down.magnitude.abs) * (size - 1)).toInt)
     Pixel((x * size).toInt, (y * size).toInt)
   }
