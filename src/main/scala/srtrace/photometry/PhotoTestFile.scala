@@ -18,7 +18,7 @@ object PhotoTestFile extends App {
   ): RDD[(Int, Int)] = {
     val ret = Array.fill(cartAndRadNumbersArray.length)((0, 0))
     for (i <- cartAndRadNumbersArray.indices) yield {
-      ret(i) = (i % partitionNum, cartAndRadNumbersArray(i))
+      ret(i) = (i, cartAndRadNumbersArray(i))
     }
     sc.parallelize(ret).repartition(partitionNum)
   }
@@ -46,7 +46,8 @@ object PhotoTestFile extends App {
     6012, 6013, 6014, 6015, 6016, 6017, 6018, 6019, 6020, 6021, 6022, 6023,
     6024, 6025, 6026, 6027, 6028, 6029)
 
-  val kryoConf = new SparkConf().setAppName("photo") //.setMaster("local[*]")
+  val kryoConf = new SparkConf().setAppName("photo")//.setMaster("local[*]")
+  
   kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   //kryoConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "true")
   kryoConf.set("spark.executor.cores", "5")
@@ -60,6 +61,7 @@ object PhotoTestFile extends App {
   //kryoConf.set("spark.reducer.maxReqsInFlight", "1")
   kryoConf.set("spark.shuffle.io.retryWait", "60s")
   kryoConf.set("spark.shuffle.io.maxRetries", "10")
+  
   val sc = new SparkContext(kryoConf)
   
   kryoConf.registerKryoClasses(
@@ -122,7 +124,7 @@ object PhotoTestFile extends App {
   
   
 
-  PhoRender.render(sc, geom, lights, bImg, view, size, 1, numPartitions)
+  PhoRenderDeconstructed.render(sc, geom, lights, bImg, view, size, 1, numPartitions)
 
   sc.stop()
 }
