@@ -58,6 +58,7 @@ object PhoRenderDeconstructed {
       println("Rendering...")
       groupedGeoms.persist() //defaults to memeoryAndDisk
       val cRays: RDD[ColorRay] = generatePhotonRays(lights, groupedGeoms)
+      println("taken 10 crays: " + cRays.take(10).mkString("\n"))
       println("colorRays: " + cRays.count())
       val cRayids: RDD[(ColorRay, IntersectData)] =
         purgeNonCollisions(cRays, groupedGeoms, numPartitions)
@@ -102,16 +103,11 @@ object PhoRenderDeconstructed {
     groupedGeoms.values.flatMap(kdTree => {
       //replace with photonSource approach
       lights.flatMap(light => {
-        for (i <- 0 until 10000) yield {
-          val boxDiff = kdTree.boundingBox.max
-            .max(kdTree.boundingBox.min) - kdTree.boundingBox.min.min(
-            kdTree.boundingBox.max
-          ) //(kdTree.boundingBox.max - kdTree.boundingBox.min)
-          val minPoint = kdTree.boundingBox.min.min(kdTree.boundingBox.max)
-          val randomLocation = minPoint + Vect(
-            rand.nextDouble * boxDiff.x,
-            rand.nextDouble * boxDiff.y,
-            rand.nextDouble * boxDiff.z
+        for (i <- 0 until 100) yield {
+          val randomLocation = Point(
+            kdTree.boundingBox.min.x + rand.nextDouble * (kdTree.boundingBox.max.x - kdTree.boundingBox.min.x),
+            kdTree.boundingBox.min.y + rand.nextDouble * (kdTree.boundingBox.max.y - kdTree.boundingBox.min.y),
+            0
           )
           ColorRay(
             light.col,
@@ -211,10 +207,10 @@ object PhoRenderDeconstructed {
   ): RDD[(ColorRay, Option[IntersectData])] = {
     val groupedRays =
       cRays.flatMap(ray => (0 to numPartitions).map(x => (x, ray)))
-    println("grouped rays!")
-    println(groupedRays.take(5).mkString(", "))
-    println("grouped geoms!")
-    println(groupedGeom.take(5).mkString(", "))
+    // println("grouped rays!")
+    // println(groupedRays.take(5).mkString(", "))
+    // println("grouped geoms!")
+    // println(groupedGeom.take(5).mkString(", "))
     groupedGeom
       .join(groupedRays)
       .map(x => {
@@ -257,29 +253,19 @@ object PhoRenderDeconstructed {
       view: (Point, Point, Vect, Vect), //eye, topLeft, right, down
       size: Int
   ): RDD[(Pixel, RTColor)] = {
+    val forward = view._3.cross(view._4).normalize 
+    val up = (-view._4).normalize
     cRays.flatMap((cRay: ColorRay) => {
-      val viewOID = GeomBox(view._2, view._2 + view._3 + view._4, {
-        case p: Point    => RTColor.Black
-      }, { case p: Point => Double.MinValue }).intersect(cRay.ray)
-      viewOID match {
-        case Some(viewId: IntersectData) => {
-          val forward = view._3.cross(view._4)
-          val fracForward = cRay.ray.dir.dot(forward)
-          if (fracForward < 0.0) {
-            val px = ((cRay.ray.dir
-              .dot(view._3) / fracForward / .008) * size / 2).toInt
-            val py = ((-cRay.ray.dir
-              .dot(-view._4) / fracForward / .008) * size / 2).toInt
-            val viewIPoint = viewId.point
-            val viewDiff = viewIPoint - view._2
-            //Seq((calcPixel(viewDiff, view, size), cRay.color))
-            if (px >= 0 && px < size && py >= 0 && py < size) Seq((Pixel(px, py), cRay.color))
-            else Seq()
-          } else Seq()
-        }
-        case None => {
-          Seq()
-        }
+      val fracForward = cRay.ray.dir.dot(forward)
+      // println(fracForward)
+      if (fracForward < 0.0) {
+        val px = ((cRay.ray.dir.dot(view._3) / fracForward / 0.707 + 1.0) * size / 2).toInt
+        val py = ((-cRay.ray.dir.dot(up) / fracForward / .707 + 1.0) * size / 2).toInt //dir is a ray from the intersect point to the eyeball
+        // println(s"px: $px, py: $py, fracForward: $fracForward")
+        if (px >= 0 && px < size && py >= 0 && py < size) Seq((Pixel(px, py), cRay.color))
+        else Seq()
+      } else {
+        Seq()
       }
     })
   }
