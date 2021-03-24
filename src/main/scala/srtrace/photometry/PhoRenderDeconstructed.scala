@@ -1,19 +1,14 @@
 package srtrace.photometry
 
-import java.awt.image.BufferedImage
-
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
-import swiftvis2.raytrace._
-import java.net.InetAddress
-import java.util.Random
-import org.apache.spark.SparkConf
-import org.apache.spark.broadcast.Broadcast
-import java.awt.image.BufferedImage
-import javax.swing._
 import java.awt.Graphics
+import java.awt.image.BufferedImage
+import java.util.Random
+
+import javax.swing._
+import org.apache.spark.{RangePartitioner, SparkContext}
+import org.apache.spark.rdd.RDD
 import srtrace._
-import org.apache.spark.RangePartitioner
+import swiftvis2.raytrace._
 
 object PhoRenderDeconstructed {
   def render(
@@ -101,9 +96,10 @@ object PhoRenderDeconstructed {
   ): RDD[ColorRay] = {
     val rand = new Random(System.currentTimeMillis())
     groupedGeoms.values.flatMap(kdTree => {
+      println(s"kdTree bounding box min: ${kdTree.boundingBox.min} kdTree bounding max: ${kdTree.boundingBox.max}")
       //replace with photonSource approach
       lights.flatMap(light => {
-        for (i <- 0 until 100) yield {
+        for (i <- 0 until 1000) yield {
           val randomLocation = Point(
             kdTree.boundingBox.min.x + rand.nextDouble * (kdTree.boundingBox.max.x - kdTree.boundingBox.min.x),
             kdTree.boundingBox.min.y + rand.nextDouble * (kdTree.boundingBox.max.y - kdTree.boundingBox.min.y),
@@ -253,15 +249,22 @@ object PhoRenderDeconstructed {
       view: (Point, Point, Vect, Vect), //eye, topLeft, right, down
       size: Int
   ): RDD[(Pixel, RTColor)] = {
-    val forward = view._3.cross(view._4).normalize 
     val up = (-view._4).normalize
+    val right = view._3.normalize
+    val forward = up.cross(right)//view._3.cross(view._4).normalize
+    val angle = 1.0 //.707
+    println(s"up: $up right: $right forward: $forward")
     cRays.flatMap((cRay: ColorRay) => {
-      val fracForward = cRay.ray.dir.dot(forward)
-      // println(fracForward)
+      println("new ray")
+      val inRay = cRay.ray.dir.normalize
+      val fracForward = inRay.dot(forward)
+      println(s"cRay: $cRay")
+      println(s"inRay: $inRay")
+      println(fracForward)
       if (fracForward < 0.0) {
-        val px = ((cRay.ray.dir.dot(view._3) / fracForward / 0.707 + 1.0) * size / 2).toInt
-        val py = ((-cRay.ray.dir.dot(up) / fracForward / .707 + 1.0) * size / 2).toInt //dir is a ray from the intersect point to the eyeball
-        // println(s"px: $px, py: $py, fracForward: $fracForward")
+        val px = ((inRay.dot(right) / fracForward / angle + 1.0) * size / 2).toInt
+        val py = ((-inRay.dot(up) / fracForward / angle + 1.0) * size / 2).toInt //dir is a ray from the intersect point to the eyeball
+        println(s"px: $px, py: $py, fracForward: $fracForward")
         if (px >= 0 && px < size && py >= 0 && py < size) Seq((Pixel(px, py), cRay.color))
         else Seq()
       } else {
