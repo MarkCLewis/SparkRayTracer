@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage
 import java.util.Random
 
 import javax.swing._
+import java.awt.Color
 import org.apache.spark.{RangePartitioner, SparkContext}
 import org.apache.spark.rdd.RDD
 import srtrace._
@@ -53,26 +54,28 @@ object PhoRenderDeconstructed {
       println("Rendering...")
       groupedGeoms.persist() //defaults to memeoryAndDisk
       val cRays: RDD[ColorRay] = generatePhotonRays(lights, groupedGeoms)
-      println("taken 10 crays: " + cRays.take(10).mkString("\n"))
-      println("colorRays: " + cRays.count())
+      //println("taken 10 crays: " + cRays.take(10).mkString("\n"))
+      //println("colorRays: " + cRays.count())
       val cRayids: RDD[(ColorRay, IntersectData)] =
         purgeNonCollisions(cRays, groupedGeoms, numPartitions)
-      println("rays to geometry: " + cRayids.count())
+      //println("rays to geometry: " + cRayids.count())
       val scatteredCRays: RDD[ColorRay] = scatterPhotonRays(cRayids, view._1)
-      println("scattered rays: " + scatteredCRays.count())
+      //println("scattered rays: " + scatteredCRays.count())
       val cRaysToEye: RDD[ColorRay] =
         purgeCollisions(scatteredCRays, groupedGeoms, numPartitions)
-      println("rays to eye: " + cRaysToEye.count())
+      //println("rays to eye: " + cRaysToEye.count())
       val pixelColors: Array[(Pixel, RTColor)] =
         convertRaysToPixelColors(cRaysToEye, view, size).collect()
-      println("pixels: " + pixelColors.length)
+      //println("pixels: " + pixelColors.length)
       pixelColors.foreach {
         case (p: Pixel, c: RTColor) => {
           if (c != RTColor.Black) {
             println(c + ", " + p)
           }
           println("point: " + p + ", color: " + c)
-          bImg.setRGB(p.x, p.y, c.toARGB)
+          val col = bImg.getRGB(p.x, p.y)
+          
+          bImg.setRGB(p.x, p.y, col + c.toARGB)
         }
       }
       frame.repaint()
@@ -99,7 +102,7 @@ object PhoRenderDeconstructed {
       println(s"kdTree bounding box min: ${kdTree.boundingBox.min} kdTree bounding max: ${kdTree.boundingBox.max}")
       //replace with photonSource approach
       lights.flatMap(light => {
-        for (i <- 0 until 1000) yield {
+        for (i <- 0 until 4000) yield {
           val randomLocation = Point(
             kdTree.boundingBox.min.x + rand.nextDouble * (kdTree.boundingBox.max.x - kdTree.boundingBox.min.x),
             kdTree.boundingBox.min.y + rand.nextDouble * (kdTree.boundingBox.max.y - kdTree.boundingBox.min.y),
@@ -141,10 +144,7 @@ object PhoRenderDeconstructed {
         val (part, (cRay: ColorRay, oid: Option[IntersectData])) = x
         (cRay, oid.get)
       })
-    val rangeParter =
-      new RangePartitioner(numPartitions, partitionerTarget, false)
     partitionerTarget
-      .partitionBy(rangeParter)
       .reduceByKey(
         (id1: IntersectData, id2: IntersectData) => {
           if (id1.time <= id2.time) id1 else id2
@@ -253,18 +253,18 @@ object PhoRenderDeconstructed {
     val right = view._3.normalize
     val forward = up.cross(right)//view._3.cross(view._4).normalize
     val angle = 1.0 //.707
-    println(s"up: $up right: $right forward: $forward")
+    //println(s"up: $up right: $right forward: $forward")
     cRays.flatMap((cRay: ColorRay) => {
-      println("new ray")
+      //println("new ray")
       val inRay = cRay.ray.dir.normalize
       val fracForward = inRay.dot(forward)
-      println(s"cRay: $cRay")
-      println(s"inRay: $inRay")
-      println(fracForward)
+      //println(s"cRay: $cRay")
+      //println(s"inRay: $inRay")
+      //println(fracForward)
       if (fracForward < 0.0) {
         val px = ((inRay.dot(right) / fracForward / angle + 1.0) * size / 2).toInt
         val py = ((-inRay.dot(up) / fracForward / angle + 1.0) * size / 2).toInt //dir is a ray from the intersect point to the eyeball
-        println(s"px: $px, py: $py, fracForward: $fracForward")
+        //println(s"px: $px, py: $py, fracForward: $fracForward")
         if (px >= 0 && px < size && py >= 0 && py < size) Seq((Pixel(px, py), cRay.color))
         else Seq()
       } else {
