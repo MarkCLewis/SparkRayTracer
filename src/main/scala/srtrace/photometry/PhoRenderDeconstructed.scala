@@ -3,6 +3,7 @@ package srtrace.photometry
 import java.awt.Graphics
 import java.awt.image.BufferedImage
 import java.util.Random
+import javax.imageio._
 
 import javax.swing._
 import java.awt.Color
@@ -10,6 +11,9 @@ import org.apache.spark.{RangePartitioner, SparkContext}
 import org.apache.spark.rdd.RDD
 import srtrace._
 import swiftvis2.raytrace._
+import org.apache.hadoop.yarn.webapp.hamlet.HamletSpec.P
+import org.apache.spark.storage.StorageLevel
+
 
 object PhoRenderDeconstructed {
   def render(
@@ -22,7 +26,6 @@ object PhoRenderDeconstructed {
       numRays: Int = 1,
       numPartitions: Int
   ): Unit = {
-
     val img = new RTImage {
       def width = bImg.getWidth()
 
@@ -47,62 +50,70 @@ object PhoRenderDeconstructed {
     frame.setSize(size, size)
     frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE)
     frame.setVisible(true)
-
+    var totalTime = 0.0
     var line = ""
-
+    groupedGeoms.persist(StorageLevel.MEMORY_AND_DISK_SER)
+    //2d array of colors
+    val colors:Array[Array[RTColor]] = Array.fill(size, size)(RTColor.Black)
     while (line != "q") {
+      val start = System.nanoTime() //not including geometry setup time
       println("Rendering...")
-      groupedGeoms.persist() //defaults to memeoryAndDisk
       val cRays: RDD[ColorRay] = generatePhotonRays(lights, groupedGeoms)
-      //println("taken 10 crays: " + cRays.take(10).mkString("\n"))
-      //println("colorRays: " + cRays.count())
-      val cRayids: RDD[(ColorRay, IntersectData)] =
-        purgeNonCollisions(cRays, groupedGeoms, numPartitions)
-      //println("rays to geometry: " + cRayids.count())
+      //println(s"number of initial rays: ${cRays.count()}")
+      val cRayids: RDD[(ColorRay, IntersectData)] = purgeNonCollisions(cRays, groupedGeoms, numPartitions)
+      //println(s"number of non-collision rays: ${cRayids.count()}")
       val scatteredCRays: RDD[ColorRay] = scatterPhotonRays(cRayids, view._1)
-      //println("scattered rays: " + scatteredCRays.count())
-      val cRaysToEye: RDD[ColorRay] =
-        purgeCollisions(scatteredCRays, groupedGeoms, numPartitions)
-      //println("rays to eye: " + cRaysToEye.count())
-      val pixelColors: Array[(Pixel, RTColor)] =
-        convertRaysToPixelColors(cRaysToEye, view, size).collect()
-      //println("pixels: " + pixelColors.length)
+      //println(s"number of scattered rays: ${scatteredCRays.count()}")
+      val cRaysToEye: RDD[ColorRay] = purgeCollisions(scatteredCRays, groupedGeoms, numPartitions)
+      //println(s"number of rays to eye: ${cRaysToEye.count()}")
+      val pixelColors: Array[(Pixel, RTColor)] = convertRaysToPixelColors(cRaysToEye, view, size).collect()
+      //println(s"number of pixelColors: ${pixelColors.length}")
+
+
       pixelColors.foreach {
         case (p: Pixel, c: RTColor) => {
-          if (c != RTColor.Black) {
-            println(c + ", " + p)
-          }
-          println("point: " + p + ", color: " + c)
-          val col = bImg.getRGB(p.x, p.y)
+          colors(p.x)(p.y) += c
           
-          bImg.setRGB(p.x, p.y, col + c.toARGB)
         }
       }
+      writeToImage(colors, img, bImg)
+
       frame.repaint()
       frame.paint(frame.getGraphics())
       frame.update(frame.getGraphics())
       frame.setVisible(true)
-
+      val time = (System.nanoTime()-start)*1e-9
+      println(time + " seconds this run")
+      totalTime = totalTime.toDouble + time
+      println(totalTime + " seconds total")
       //frame.update(graphics)
       println("q to quit, or anything else to continue...")
+      
       line = readLine()
     }
 
   }
-
+  def writeToImage(pixels: Array[Array[RTColor]], image: RTImage, bImg: BufferedImage): Unit = {
+    val maxPix = pixels.foldLeft(0.0)((m,row) => m max row.foldLeft(0.0)((m2, p) => m2 max p.r max p.g max p.b))
+    for (px <- 0 until image.width; py <- 0 until image.height) {
+      image.setColor(px, py, (pixels(px)(py) / maxPix * 4.0).copy(a = 1.0)) //switched from 2 to 4 4/1 3:36
+    }
+    ImageIO.write(bImg, "PNG", new java.io.File(s"photoRender.${System.currentTimeMillis()}.png"))
+  }
   /*
     generates rays from each light to random points in the boundingbox at z=0.
-   */
+  */
   private def generatePhotonRays(
       lights: List[PointLight],
       groupedGeoms: RDD[(Int, KDTreeGeometry[BoundingBox])]
   ): RDD[ColorRay] = {
-    val rand = new Random(System.currentTimeMillis())
-    groupedGeoms.values.flatMap(kdTree => {
+    groupedGeoms.flatMap(x => {
+      val rand = new Random(System.currentTimeMillis())
+      val (part, kdTree) = x
       println(s"kdTree bounding box min: ${kdTree.boundingBox.min} kdTree bounding max: ${kdTree.boundingBox.max}")
       //replace with photonSource approach
       lights.flatMap(light => {
-        for (i <- 0 until 4000) yield {
+        for (i <- 0 until 400000) yield {
           val randomLocation = Point(
             kdTree.boundingBox.min.x + rand.nextDouble * (kdTree.boundingBox.max.x - kdTree.boundingBox.min.x),
             kdTree.boundingBox.min.y + rand.nextDouble * (kdTree.boundingBox.max.y - kdTree.boundingBox.min.y),
@@ -128,8 +139,9 @@ object PhoRenderDeconstructed {
       groupedGeom: RDD[(Int, KDTreeGeometry[BoundingBox])],
       numPartitions: Int
   ): RDD[(ColorRay, IntersectData)] = {
+    
     val groupedRays =
-      cRays.flatMap(ray => (0 to numPartitions).map(x => (x, ray)))
+      cRays.flatMap(ray => (0 to numPartitions).map(x => (x, ray))).repartition(numPartitions)
     val partitionerTarget = groupedGeom
       .join(groupedRays)
       .map(x => {
@@ -165,8 +177,8 @@ object PhoRenderDeconstructed {
         val hitPoint = id.point
         val hitGeom = id.geom
         val rayToEye = Ray(hitPoint + id.norm * 0.0001 * geomSize, eye)
-        //val scatterPercent = hitGeom.asInstanceOf[ScatterableSphere].fractionScattered(cRay.ray.dir, rayToEye.dir, id)
-        ColorRay(cRay.color, rayToEye)
+        val scatterPercent = hitGeom.asInstanceOf[ScatterableSphere].fractionScattered(cRay.ray.dir, rayToEye.dir, id)
+        ColorRay(cRay.color * scatterPercent, rayToEye)
     })
   }
 
@@ -179,21 +191,9 @@ object PhoRenderDeconstructed {
       numPartitions: Int
   ): RDD[ColorRay] = {
     val first = purgeCollisions1(cRays, groupedGeom, numPartitions)
-    // println("FIRST")
-    // println(first.count())
-    // println(first.take(10).mkString(", "))
     val second = purgeCollisions2(first)
-    // println("SECOND")
-    // println(second.count())
-    // println(second.take(10).mkString(", "))
     val third = purgeCollisions3(second)
-    // println("THIRD")
-    // println(third.count())
-    // println(third.take(10).mkString(", "))
     val fourth = purgeCollisions4(third)
-    // println("FOURTH")
-    // println(fourth.count())
-    // println(fourth.take(10).mkString(", "))
     fourth
   }
   def purgeCollisions1(
@@ -202,7 +202,7 @@ object PhoRenderDeconstructed {
       numPartitions: Int
   ): RDD[(ColorRay, Option[IntersectData])] = {
     val groupedRays =
-      cRays.flatMap(ray => (0 to numPartitions).map(x => (x, ray)))
+      cRays.flatMap(ray => (0 to numPartitions).map(x => (x, ray))).repartition(numPartitions)
     // println("grouped rays!")
     // println(groupedRays.take(5).mkString(", "))
     // println("grouped geoms!")
@@ -262,8 +262,8 @@ object PhoRenderDeconstructed {
       //println(s"inRay: $inRay")
       //println(fracForward)
       if (fracForward < 0.0) {
-        val px = ((inRay.dot(right) / fracForward / angle + 1.0) * size / 2).toInt
-        val py = ((-inRay.dot(up) / fracForward / angle + 1.0) * size / 2).toInt //dir is a ray from the intersect point to the eyeball
+        val px = ((inRay.dot(right) / fracForward / angle + 1.0) * size / 2).toInt //projecting the direction of the inward ray onto up and right locations 
+        val py = ((-inRay.dot(up) / fracForward / angle + 1.0) * size / 2).toInt  //we project inRays onto desired up and rights to calculate 
         //println(s"px: $px, py: $py, fracForward: $fracForward")
         if (px >= 0 && px < size && py >= 0 && py < size) Seq((Pixel(px, py), cRay.color))
         else Seq()
@@ -272,20 +272,4 @@ object PhoRenderDeconstructed {
       }
     })
   }
-//eye, topLeft, right, down
-//(Point(0.0, 0.0, distMult*1e-5), Point(-1e-5, 1e-5, (distMult-1)*1e-5), Vect(2 * 1e-5, 0, 0), Vect(0, -2 * 1e-5, 0))
-//   private def calcPixel(
-//       viewDiff: Vect,
-//       view: (Point, Point, Vect, Vect),
-//       size: Int
-//   ): Pixel = {
-//     // val topLeft = view._2
-//     // val right = view._3
-//     // val down = view._4
-//     // val x = viewDiff.x / right.magnitude
-//     // val y = (viewDiff.z / down.magnitude).abs //(viewDiff.y - topLeft.y).abs//((topLeft.y - viewDiff.y.abs).abs)
-//     // //Pixel(((x / right.magnitude) * (size -1)).toInt, ((y.abs / down.magnitude.abs) * (size - 1)).toInt)
-//     // Pixel((x * size).toInt, (y * size).toInt)
-
-//   }
 }

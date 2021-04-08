@@ -10,7 +10,6 @@ import javax.swing._
 import java.awt.Graphics
 import org.apache.spark.api.java.StorageLevels
 
-
 object EricasTestingFile {
   //Creates an RDD with the partition # and the CartAndRad File #
   def divisionOfFiles(sc: SparkContext, partitionNum: Int, cartAndRadNumbersArray: Seq[Int]): RDD[(Int, Int)] = {
@@ -18,7 +17,7 @@ object EricasTestingFile {
       for (i <- cartAndRadNumbersArray.indices) yield {
           ret(i) = (i % partitionNum, cartAndRadNumbersArray(i))
       }
-      sc.parallelize(ret).repartition(800)
+      sc.parallelize(ret).repartition(partitionNum)
   }
 
   def giveOffsets(sc: SparkContext, r: RDD[(Int, Int)], offsetArray: IndexedSeq[(Double, Double)]) : RDD[(Int,(Int, Double, Double))] = {
@@ -27,7 +26,7 @@ object EricasTestingFile {
   }
 
   def createKDTrees(sc: SparkContext, r: RDD[(Int,(Int, Double, Double))]): RDD[(Int, KDTreeGeometry[BoundingSphere])] = {
-      r.map(t => (t._1, GeometrySetup.readRingWithOffset(t._2._1, t._2._2, t._2._3))).persist(StorageLevels.MEMORY_AND_DISK)
+      r.map(t => (t._1, GeometrySetup.readRingWithOffset(t._2._1, t._2._2, t._2._3)))//.persist(StorageLevels.MEMORY_AND_DISK)
   }
   
   val realCartAndRadNumbers = Vector[Int](5000, 5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010, 5011, 
@@ -41,17 +40,33 @@ object EricasTestingFile {
         }
     System.setProperty("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val kryoConf = new SparkConf().setAppName("ETF")//.setMaster("local[*]")
+
+    // Original Spark settings (commented out 3/30/21)
+    // kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    // kryoConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "true")
+    // kryoConf.set("spark.executor.cores", "5")
+    // kryoConf.set("spark.dynamicAllocation.enabled", "true")
+    // kryoConf.set("spark.worker.memory", "16G")
+    // kryoConf.set("spark.executor.cores", "31")
+    // kryoConf.set("spark.executor.memory", "15G")
+    // kryoConf.set("spark.dynamicAllocation.initialExecutors", "8")
+    // kryoConf.set("spark.dynamicAllocation.maxExecutors", "8")
+    // kryoConf.set("spark.kryoserializer.buffer", "2047M")
+    // kryoConf.set("spark.reducer.maxReqsInFlight", "1")
+    // kryoConf.set("spark.shuffle.io.retryWait", "60s")
+    // kryoConf.set("spark.shuffle.io.maxRetries", "10")
+
     kryoConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    kryoConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "true")
+    //kryoConf.set("spark.dynamicAllocation.shuffleTracking.enabled", "true")
     kryoConf.set("spark.executor.cores", "5")
-    kryoConf.set("spark.dynamicAllocation.enabled", "true")
-    kryoConf.set("spark.worker.memory", "16G")
-    kryoConf.set("spark.executor.cores", "31")
-    kryoConf.set("spark.executor.memory", "15G")
-    kryoConf.set("spark.dynamicAllocation.initialExecutors", "8")
-    kryoConf.set("spark.dynamicAllocation.maxExecutors", "8")
+    //kryoConf.set("spark.dynamicAllocation.enabled", "true")
+    //kryoConf.set("spark.worker.memory", "16G")
+    //kryoConf.set("spark.executor.cores", "31")
+    //kryoConf.set("spark.executor.memory", "15G")
+    //kryoConf.set("spark.dynamicAllocation.initialExecutors", "8")
+    //kryoConf.set("spark.dynamicAllocation.maxExecutors", "8")
     kryoConf.set("spark.kryoserializer.buffer", "2047M")
-    kryoConf.set("spark.reducer.maxReqsInFlight", "1")
+    //kryoConf.set("spark.reducer.maxReqsInFlight", "1")
     kryoConf.set("spark.shuffle.io.retryWait", "60s")
     kryoConf.set("spark.shuffle.io.maxRetries", "10")
 
@@ -70,8 +85,9 @@ object EricasTestingFile {
     val bimg: BufferedImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
     //val lights: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
     val lights = List(
-      PointLight(new RTColor(0.9, 0.9, 0.9, 1), Point(1e-1, 0, 1e-2)),
-      PointLight(new RTColor(0.5, 0.4, 0.1, 1), Point(-1e-1, 0, 1e-2))
+        PointLight(new RTColor(1, 1, 1, 1), Point(1, 0, 0.2))
+      //PointLight(new RTColor(0.9, 0.9, 0.9, 1), Point(1e-1, 0, 1e-2))/*,
+      //PointLight(new RTColor(0.5, 0.4, 0.1, 1), Point(-1e-1, 0, 1e-2))*/
     )
     val n = math.sqrt(numPartitions.toDouble / 10.0).ceil.toInt
     val view = GeometrySetup.topView(10 * n)//.topView()//.standardView()
@@ -83,7 +99,9 @@ object EricasTestingFile {
     //val offsets = Array[(Double, Double)]((0,0), (2.0e-5, 0), (-2.0e-5, 0), (2*2.0e-5, 0), (-2*2.0e-5, 0), (3*2.0e-5, 0), (-3*2.0e-5, 0), (4*2.0e-5, 0), (-4*2.0e-5, 0), (5*2.0e-5, 0))
         // (0, 2.0e-5), (0, -2.0e-5), (0, 2*2.0e-5), (0, -2*2.0e-5)), 
 
-    val geom = createKDTrees(sc, giveOffsets(sc, divisionOfFiles(sc, numPartitions, usedCartAndRadNumbers), offsets))//.collect()//sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
+    val preGeomStartTime = System.nanoTime()
+    val geom = createKDTrees(sc, giveOffsets(sc, divisionOfFiles(sc, numPartitions, usedCartAndRadNumbers), offsets)).persist(StorageLevels.MEMORY_AND_DISK_SER)//.collect()//sc.parallelize(GeometrySetup.randomGeometryActualArr(new scala.util.Random(System.currentTimeMillis), maxX, minX,20,10,10,-10,2, 5)) //actual geometries
+    
     // val keyedGeoms: RDD[(Int, GeomSphere)] = geom.map(iGeom => ((iGeom.center.x - minX) / (maxX - minX) * numPartitions).toInt -> iGeom).repartition(numPartitions)
     // val groupedGeoms: RDD[(Int, Geometry)] = keyedGeoms.groupByKey().map { case (i, spheres) => i -> new KDTreeGeometry(spheres.toSeq) }
 
@@ -137,11 +155,14 @@ object EricasTestingFile {
             Renderer1.render(sc, geomNoRDD, lights, bimg, view, size, 1, numPartitions)
         case "2" =>
             Renderer2.render(sc, geomNoRDD, lights, bimg, view, size, 1, numPartitions)
+        case "4" =>
+            Renderer3b.render(sc, geom, lights, bimg, view, size, 1, numPartitions)
         case _ =>
             Renderer3.render(sc, geom, lights, bimg, view, size, 1, numPartitions)
     }
 
-        println((System.nanoTime()-start)*1e-9 + " seconds")
+        println("Not including geometry: " + (System.nanoTime()-start)*1e-9 + " seconds")
+        println("Including geometry: " + (System.nanoTime()-preGeomStartTime)*1e-9 + " seconds")
 
         val frame = new JFrame {
             override def paint(g: Graphics): Unit = {

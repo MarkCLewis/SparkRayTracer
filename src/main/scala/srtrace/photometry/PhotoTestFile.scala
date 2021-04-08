@@ -50,7 +50,7 @@ object PhotoTestFile extends App {
   //kryoConf.set("spark.dynamicAllocation.enabled", "true")
   //kryoConf.set("spark.worker.memory", "16G")
   //kryoConf.set("spark.executor.cores", "31")
-  kryoConf.set("spark.executor.memory", "15G")
+  //kryoConf.set("spark.executor.memory", "15G")
   //kryoConf.set("spark.dynamicAllocation.initialExecutors", "8")
   //kryoConf.set("spark.dynamicAllocation.maxExecutors", "8")
   kryoConf.set("spark.kryoserializer.buffer", "2047M")
@@ -74,6 +74,7 @@ object PhotoTestFile extends App {
   sc.setLogLevel("WARN")
   sc.statusTracker.getExecutorInfos
   val numPartitions = args(0).toInt
+  
 
   val cartAndRadNumbers =
     (0 until (numPartitions.toDouble / realCartAndRadNumbers.length).ceil.toInt)
@@ -86,10 +87,10 @@ object PhotoTestFile extends App {
     new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
   //val lights: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
   val lights = List(
-    PointLight(new RTColor(0.9, 0.9, 0.9, 1), Point(1e-1, 1, 1e-2)),
+    PointLight(new RTColor(1, .1, 1, 1), Point(1, 0, 0.2))/*,
     PointLight(new RTColor(0.5, 0.4, 0.1, 1), Point(-1e-1, 1, 1e-2)),
     PointLight(new RTColor(0.8, 0.9, 0.9, 1), Point(1e-1, 1, 1e-2)),
-    PointLight(new RTColor(0.2, 0.4, 0.1, 1), Point(-1e-1, 1, 1e-2))
+    PointLight(new RTColor(0.2, 0.4, 0.1, 1), Point(-1e-1, 1, 1e-2))*/
   )
   val n = math.sqrt(numPartitions.toDouble / 10.0).ceil.toInt
   val view = GeometrySetup.topView(10 * n) //.topView()//.standardView()

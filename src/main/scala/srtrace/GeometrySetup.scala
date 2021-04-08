@@ -6,6 +6,7 @@ import scala.util.Random
 
 import data.CartAndRad
 import swiftvis2.raytrace._
+import srtrace.photometry.ScatterableSphere
 
 
 
@@ -81,7 +82,7 @@ object GeometrySetup {
 
 	def readRingWithOffsetSpheres(step: Int, xoff: Double, yoff: Double): Seq[Geometry] = {
 		val carURL = new URL("http://www.cs.trinity.edu/~mlewis/Rings/AMNS-Moonlets/Moonlet4/CartAndRad." + step.toString + ".bin")
-		CartAndRad.readStream(carURL.openStream).map(p => GeomSphere(Point(p.x + xoff, p.y + yoff, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0))
+		CartAndRad.readStream(carURL.openStream).map(p => ScatterableSphere(GeomSphere(Point(p.x + xoff, p.y + yoff, p.z), p.rad, _ => new RTColor(1, 1, 1, 1), _ => 0.0)))
 	}
 
 	def readRingWithOffset(step: Int, xoff: Double, yoff: Double): KDTreeGeometry[BoundingSphere] = {
