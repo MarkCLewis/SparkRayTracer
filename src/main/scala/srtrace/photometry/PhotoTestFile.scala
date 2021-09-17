@@ -73,7 +73,7 @@ object PhotoTestFile extends App {
   )
   sc.setLogLevel("WARN")
   sc.statusTracker.getExecutorInfos
-  val numPartitions = 1//args(0).toInt
+  val numPartitions = 2//args(0).toInt
   
 
   val cartAndRadNumbers =
@@ -87,7 +87,7 @@ object PhotoTestFile extends App {
     new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
   //val lights: List[PointLight] = List(new PointLight(RTColor.White, Point(-2.0, 0.0, 2.0)))
   val lights = List(
-    PointLight(new RTColor(1, .1, 1, 1), Point(1, 0, 0.2))/*,
+    PointLight(new RTColor(1, 1, 1, 1), Point(1, 0, 0.2))/*,
     PointLight(new RTColor(0.5, 0.4, 0.1, 1), Point(-1e-1, 1, 1e-2)),
     PointLight(new RTColor(0.8, 0.9, 0.9, 1), Point(1e-1, 1, 1e-2)),
     PointLight(new RTColor(0.2, 0.4, 0.1, 1), Point(-1e-1, 1, 1e-2))*/
